@@ -18,21 +18,45 @@ type Config struct {
 }
 
 func Load(path string) (*Config, error) {
+	// Start with default config
+	cfg := defaultConfig()
+
+	// Load from YAML file if it exists
 	data, err := os.ReadFile(path)
-	if err != nil {
-		// Return default config if file doesn't exist
-		if os.IsNotExist(err) {
-			return defaultConfig(), nil
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+
+	if err == nil {
+		if err := yaml.Unmarshal(data, cfg); err != nil {
+			return nil, err
 		}
-		return nil, err
 	}
 
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, err
+	// Override with environment variables if set
+	if envListenAddr := os.Getenv("LISTEN_ADDR"); envListenAddr != "" {
+		cfg.ListenAddr = envListenAddr
+	}
+	if envDatabasePath := os.Getenv("DATABASE_PATH"); envDatabasePath != "" {
+		cfg.DatabasePath = envDatabasePath
+	}
+	if envWakaTimeAPI := os.Getenv("WAKATIME_API_KEY"); envWakaTimeAPI != "" {
+		cfg.WakaTimeAPI = envWakaTimeAPI
+	}
+	if envProxyURL := os.Getenv("PROXY_URL"); envProxyURL != "" {
+		cfg.ProxyURL = envProxyURL
+	}
+	if envStartDate := os.Getenv("START_DATE"); envStartDate != "" {
+		cfg.StartDate = envStartDate
+	}
+	if envSyncSchedule := os.Getenv("SYNC_SCHEDULE"); envSyncSchedule != "" {
+		cfg.SyncSchedule = envSyncSchedule
+	}
+	if envTimezone := os.Getenv("TIMEZONE"); envTimezone != "" {
+		cfg.Timezone = envTimezone
 	}
 
-	// Apply defaults for missing values
+	// Apply defaults for any still-missing values
 	if cfg.ListenAddr == "" {
 		cfg.ListenAddr = ":3040"
 	}
@@ -49,7 +73,7 @@ func Load(path string) (*Config, error) {
 		cfg.Timezone = "Local"
 	}
 
-	return &cfg, nil
+	return cfg, nil
 }
 
 func defaultConfig() *Config {

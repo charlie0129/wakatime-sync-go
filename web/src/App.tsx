@@ -5,11 +5,13 @@ import {
 } from 'recharts';
 import { Clock, Calendar, Code, Monitor, Layers, ChevronLeft, ChevronRight, Activity } from 'lucide-react';
 import { api } from './api';
-import type { SummariesResponse, RangeStats, DurationData, DurationResponse } from './api';
+import type { SummariesResponse, RangeStats, DurationResponse } from './api';
 import { formatDate, formatDisplayDate, formatDuration, formatHours, getDateRange, getColor } from './utils';
 import type { DateRange } from './utils';
 import { subDays, addDays, parseISO } from 'date-fns';
 import './App.css';
+import ActivityGraph from './ActivityGraph';
+import TimelineSpectrum from './TimelineSpectrum';
 
 interface CustomTooltipProps {
   active?: boolean;
@@ -142,27 +144,6 @@ function App() {
     hours: day.grand_total.total_seconds / 3600,
     seconds: day.grand_total.total_seconds,
   })) || [];
-
-  // Group durations by project and calculate totals
-  const durationsByProject = durations?.data.reduce((acc: Record<string, { project: string; totalSeconds: number; items: DurationData[] }>, d) => {
-    const project = d.project || 'Unknown';
-    if (!acc[project]) {
-      acc[project] = { project, totalSeconds: 0, items: [] };
-    }
-    acc[project].totalSeconds += d.duration;
-    acc[project].items.push(d);
-    return acc;
-  }, {}) || {};
-
-  const durationBarData = Object.values(durationsByProject)
-    .sort((a, b) => b.totalSeconds - a.totalSeconds)
-    .map((p) => ({
-      name: p.project,
-      hours: p.totalSeconds / 3600,
-      seconds: p.totalSeconds,
-    }));
-
-  const totalDurationSeconds = Object.values(durationsByProject).reduce((sum, p) => sum + p.totalSeconds, 0);
 
   const canGoNext = addDays(durationDate, 1) < new Date();
   const canGoPrev = true;
@@ -491,12 +472,15 @@ function App() {
               </div>
             </div>
 
+            {/* Activity Graph (GitHub-style heatmap) */}
+            <ActivityGraph />
+
             {/* Duration Timeline */}
             <div className="chart-card duration-timeline">
               <div className="timeline-header">
                 <div className="chart-title">
                   <Clock size={18} />
-                  Daily Durations
+                  Daily Activity Timeline
                 </div>
                 <div className="timeline-nav">
                   <button
@@ -519,55 +503,11 @@ function App() {
                 </div>
               </div>
 
-              {durationLoading ? (
-                <div className="loading">
-                  <div className="spinner" />
-                  Loading...
-                </div>
-              ) : durationBarData.length === 0 ? (
-                <div className="empty-state">
-                  <Clock className="empty-state-icon" />
-                  <p>No activity recorded for this day</p>
-                </div>
-              ) : (
-                <>
-                  <div style={{ marginBottom: 16, color: 'var(--text-secondary)', fontSize: 14 }}>
-                    Total: {formatDuration(totalDurationSeconds)}
-                  </div>
-                  <div className="chart-container">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={durationBarData} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="#30363d" horizontal={false} />
-                        <XAxis
-                          type="number"
-                          stroke="#8b949e"
-                          fontSize={12}
-                          tickFormatter={(value) => `${(value).toFixed(1)}h`}
-                        />
-                        <YAxis
-                          type="category"
-                          dataKey="name"
-                          stroke="#8b949e"
-                          fontSize={12}
-                          width={150}
-                          tickLine={false}
-                        />
-                        <Tooltip
-                          formatter={(value) => formatDuration((Number(value) || 0) * 3600)}
-                          contentStyle={tooltipStyle.contentStyle}
-                          labelStyle={tooltipStyle.labelStyle}
-                          itemStyle={tooltipStyle.itemStyle}
-                        />
-                        <Bar dataKey="hours" name="Time" radius={[0, 4, 4, 0]}>
-                          {durationBarData.map((_, index) => (
-                            <Cell key={`cell-${index}`} fill={getColor(index)} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </>
-              )}
+              <TimelineSpectrum
+                data={durations?.data || []}
+                date={durationDateStr}
+                loading={durationLoading}
+              />
             </div>
           </>
         )}

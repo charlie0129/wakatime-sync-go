@@ -145,6 +145,26 @@ export interface SyncStatus {
   last_synced_day: string;
 }
 
+export interface AvailableYearsResponse {
+  years: number[];
+}
+
+export interface ProjectBreakdown {
+  name: string;
+  total_seconds: number;
+}
+
+export interface YearlyActivityDay {
+  date: string;
+  total_seconds: number;
+  projects: ProjectBreakdown[];
+}
+
+export interface YearlyActivityResponse {
+  year: number;
+  data: YearlyActivityDay[];
+}
+
 class ApiClient {
   private async fetch<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
     const url = new URL(API_BASE + endpoint);
@@ -187,6 +207,14 @@ class ApiClient {
 
   async getSyncStatus(): Promise<SyncStatus> {
     return this.fetch('/api/v1/sync/status');
+  }
+
+  async getAvailableYears(): Promise<AvailableYearsResponse> {
+    return this.fetch('/api/v1/stats/years');
+  }
+
+  async getYearlyActivity(year: number): Promise<YearlyActivityResponse> {
+    return this.fetch('/api/v1/stats/yearly', { year: year.toString() });
   }
 
   async triggerSync(days: number, apiKey: string): Promise<{ message: string }> {

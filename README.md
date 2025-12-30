@@ -4,7 +4,7 @@ A lightweight Go application to sync and visualize your WakaTime coding statisti
 
 This is a rewrite of the original Java/Spring version ([charlie0129/wakatime-sync](https://github.com/charlie0129/wakatime-sync), fork of [wf2311/wakatime-sync](https://github.com/wf2311/wakatime-sync)) using Go + SQLite (no CGO) + React.
 
-<img width="2842" height="4434" alt="image" src="https://github.com/user-attachments/assets/7e97c808-f081-4bb3-b67d-efc86303b021" />
+<img width="2766" height="5266" alt="image" src="https://github.com/user-attachments/assets/d16ef5f8-6e0a-40fc-94c2-7b61dd2d86f0" />
 
 ## Why a Rewrite?
 
@@ -52,13 +52,55 @@ python3 migrate.py \
 
 ## Docker
 
+You can configure the application using either a config file or environment variables.
+
+**Option 1: Using Environment Variables**
+
+You can configure everything using environment variables without a config file:
+
+```bash
+docker run -d \
+  -p 3040:3040 \
+  -e WAKATIME_API_KEY=your_api_key_here \
+  -e DATABASE_PATH=/app/data/wakatime.db \
+  -e TIMEZONE=America/New_York \
+  -v $(pwd)/data:/app/data \
+  ghcr.io/charlie0129/wakatime-sync-go
+```
+
+Or with Docker Compose:
+
+```yaml
+name: wakatime-sync-go
+services:
+  wakatime-sync-go:
+    container_name: wakatime-sync-go
+    image: ghcr.io/charlie0129/wakatime-sync-go
+    restart: unless-stopped
+    ports:
+      - "3040:3040"
+    environment:
+      - WAKATIME_API_KEY=your_api_key_here
+      - DATABASE_PATH=/app/data/wakatime.db
+      - LISTEN_ADDR=:3040
+      - START_DATE=2020-01-01
+      - SYNC_SCHEDULE=0 1 * * *
+      - TIMEZONE=America/New_York
+    volumes:
+      - ./data:/app/data
+```
+
+<details>
+<summary>Option 2: Using Config File</summary>
+
 Copy the example config and edit it:
 
 ```bash
 cp config.example.yaml config.yaml
 ```
 
-Set `database_path` to `/app/data/wakatime.db` and fill in your WakaTime API key.
+> [!IMPORTANT]
+> Set `database_path` to `/app/data/wakatime.db` and fill in your WakaTime API key.
 
 Then run:
 
@@ -70,6 +112,26 @@ docker run -d \
   ghcr.io/charlie0129/wakatime-sync-go
 # or charlie0129/wakatime-sync-go
 ```
+
+Or use this Docker Compose file:
+
+```yaml
+name: wakatime-sync-go
+services:
+  wakatime-sync-go:
+    container_name: wakatime-sync-go
+    image: ghcr.io/charlie0129/wakatime-sync-go
+    restart: unless-stopped
+    ports:
+      - "3040:3040"
+    volumes:
+      - ./config.yaml:/app/config.yaml
+      - ./data:/app/data
+```
+
+</details>
+<br />
+
 
 You can put whatever reverse proxy in front of it (Caddy, Nginx, Traefik, etc.) as needed. If you want to have basic auth, just put it in the reverse proxy middleware.
 
@@ -83,15 +145,17 @@ curl -X POST "http://localhost:3040/api/v1/sync?days=30&api_key=YOUR_API_KEY"
 
 ## Configuration Options
 
-| Option             | Description                                  | Default       |
-| ------------------ | -------------------------------------------- | ------------- |
-| `listen_addr`      | Server listen address                        | `:3040`       |
-| `database_path`    | SQLite database file path                    | `wakatime.db` |
-| `wakatime_api_key` | Your WakaTime API key                        | required      |
-| `proxy_url`        | HTTP/SOCKS5 proxy for WakaTime API           | empty         |
-| `start_date`       | Start date for historical sync               | `2016-01-01`  |
-| `sync_schedule`    | Cron schedule for auto sync                  | `0 1 * * *`   |
-| `timezone`         | Timezone for date calculations and sync cron | `Local`       |
+Configuration can be provided via YAML file or environment variables. Environment variables take precedence over config file values.
+
+| Option             | Environment Variable | Description                                  | Default       |
+| ------------------ | -------------------- | -------------------------------------------- | ------------- |
+| `listen_addr`      | `LISTEN_ADDR`        | Server listen address                        | `:3040`       |
+| `database_path`    | `DATABASE_PATH`      | SQLite database file path                    | `wakatime.db` |
+| `wakatime_api_key` | `WAKATIME_API_KEY`   | Your WakaTime API key                        | required      |
+| `proxy_url`        | `PROXY_URL`          | HTTP/SOCKS5 proxy for WakaTime API           | empty         |
+| `start_date`       | `START_DATE`         | Start date for historical sync               | `2016-01-01`  |
+| `sync_schedule`    | `SYNC_SCHEDULE`      | Cron schedule for auto sync                  | `0 1 * * *`   |
+| `timezone`         | `TIMEZONE`           | Timezone for date calculations and sync cron | `Local`       |
 
 ## Development Setup
 

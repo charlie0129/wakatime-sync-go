@@ -1,0 +1,270 @@
+/* Activity Graph Styles */
+
+.activity-graph-card {
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.activity-graph-card .chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.year-selector {
+  position: relative;
+}
+
+.year-dropdown-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #e6edf3;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.year-dropdown-button:hover {
+  background-color: #30363d;
+  border-color: #8b949e;
+}
+
+.year-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 100px;
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.year-option {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  color: #e6edf3;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.year-option:hover {
+  background-color: #21262d;
+}
+
+.year-option.active {
+  background-color: #1f6feb;
+}
+
+.year-option.disabled {
+  color: #8b949e;
+  cursor: default;
+}
+
+.activity-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: #8b949e;
+  font-size: 14px;
+}
+
+.activity-stats .separator {
+  color: #30363d;
+}
+
+.activity-graph {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-bottom: 8px;
+  padding-top: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.activity-graph-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: fit-content;
+}
+
+.graph-container {
+  display: flex;
+  gap: 4px;
+  width: fit-content;
+}
+
+.weeks-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.month-labels {
+  position: relative;
+  height: 16px;
+  margin-bottom: 4px;
+}
+
+.month-label {
+  position: absolute;
+  font-size: 12px;
+  color: #8b949e;
+  white-space: nowrap;
+}
+
+.month-spacer {
+  height: 20px;
+}
+
+.day-labels {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  line-height: 12px;
+  font-size: 11px;
+  color: #8b949e;
+  padding-right: 4px;
+  min-width: 28px;
+}
+
+.day-labels span {
+  height: 11px;
+  line-height: 11px;
+}
+
+.weeks-grid {
+  display: flex;
+  gap: 4px;
+}
+
+.week-column {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.day-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.day-cell:not(.empty):hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 4px rgba(57, 211, 83, 0.4);
+}
+
+.day-cell.empty {
+  cursor: default;
+}
+
+.activity-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+  justify-content: center;
+}
+
+.legend-label {
+  font-size: 11px;
+  color: #8b949e;
+  margin: 0 4px;
+}
+
+.legend-cell {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+}
+
+/* Activity Tooltip */
+.activity-tooltip {
+  position: absolute;
+  transform: translateX(-50%);
+  background-color: #1c2128;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 200px;
+  max-width: 280px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.activity-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: #30363d;
+}
+
+.tooltip-date {
+  font-size: 12px;
+  color: #8b949e;
+  margin-bottom: 4px;
+}
+
+.tooltip-total {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e6edf3;
+  margin-bottom: 8px;
+}
+
+.tooltip-projects {
+  border-top: 1px solid #30363d;
+  padding-top: 8px;
+}
+
+.tooltip-project {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.tooltip-project .project-name {
+  color: #8b949e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+}
+
+.tooltip-project .project-time {
+  color: #e6edf3;
+  font-weight: 500;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.tooltip-more {
+  font-size: 11px;
+  color: #8b949e;
+  font-style: italic;
+  margin-top: 4px;
+}

@@ -567,6 +567,131 @@ func (db *DB) GetProjectDailyStats(start, end time.Time) ([]struct {
 	return stats, rows.Err()
 }
 
+// --- Yearly Activity operations (for GitHub-style heatmap) ---
+
+// GetAvailableYears returns distinct years that have data in day_summaries
+func (db *DB) GetAvailableYears() ([]int, error) {
+	rows, err := db.Query(`
+		SELECT DISTINCT CAST(strftime('%Y', day) AS INTEGER) as year
+		FROM day_summaries
+		ORDER BY year DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var years []int
+	for rows.Next() {
+		var year int
+		if err := rows.Scan(&year); err != nil {
+			return nil, err
+		}
+		years = append(years, year)
+	}
+	return years, rows.Err()
+}
+
+// YearlyActivityDay represents activity data for a single day
+type YearlyActivityDay struct {
+	Date         string             `json:"date"`
+	TotalSeconds float64            `json:"total_seconds"`
+	Projects     []ProjectBreakdown `json:"projects,omitempty"`
+}
+
+type ProjectBreakdown struct {
+	Name         string  `json:"name"`
+	TotalSeconds float64 `json:"total_seconds"`
+}
+
+// GetYearlyActivity returns daily totals and project breakdown for an entire year
+func (db *DB) GetYearlyActivity(year int) ([]YearlyActivityDay, error) {
+	// First get all day summaries for the year
+	startDate := time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
+	endDate := time.Date(year, 12, 31, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
+
+	rows, err := db.Query(`
+		SELECT day, total_seconds
+		FROM day_summaries
+		WHERE day >= ? AND day <= ?
+		ORDER BY day
+	`, startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	dayMap := make(map[string]*YearlyActivityDay)
+	for rows.Next() {
+		var day string
+		var totalSeconds float64
+		if err := rows.Scan(&day, &totalSeconds); err != nil {
+			return nil, err
+		}
+		// Normalize date to YYYY-MM-DD format (handle possible RFC3339 format from SQLite)
+		normalizedDay := day
+		if len(day) > 10 {
+			normalizedDay = day[:10]
+		}
+		dayMap[normalizedDay] = &YearlyActivityDay{
+			Date:         normalizedDay,
+			TotalSeconds: totalSeconds,
+			Projects:     []ProjectBreakdown{},
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Get project breakdown for each day
+	projectRows, err := db.Query(`
+		SELECT day, name, total_seconds
+		FROM day_stats
+		WHERE day >= ? AND day <= ? AND type = 'project'
+		ORDER BY day, total_seconds DESC
+	`, startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+	defer projectRows.Close()
+
+	for projectRows.Next() {
+		var day, name string
+		var totalSeconds float64
+		if err := projectRows.Scan(&day, &name, &totalSeconds); err != nil {
+			return nil, err
+		}
+		// Normalize date to YYYY-MM-DD format
+		normalizedDay := day
+		if len(day) > 10 {
+			normalizedDay = day[:10]
+		}
+		if dayData, exists := dayMap[normalizedDay]; exists {
+			dayData.Projects = append(dayData.Projects, ProjectBreakdown{
+				Name:         name,
+				TotalSeconds: totalSeconds,
+			})
+		}
+	}
+
+	// Convert map to slice, ordered by date
+	var result []YearlyActivityDay
+	for _, v := range dayMap {
+		result = append(result, *v)
+	}
+
+	// Sort by date
+	for i := 0; i < len(result)-1; i++ {
+		for j := i + 1; j < len(result); j++ {
+			if result[i].Date > result[j].Date {
+				result[i], result[j] = result[j], result[i]
+			}
+		}
+	}
+
+	return result, nil
+}
+
 // --- Sync Log operations ---
 
 func (db *DB) RecordSync(day time.Time, totalSeconds float64, status string) error {

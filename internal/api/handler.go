@@ -36,6 +36,8 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	// Additional convenience endpoints
 	mux.HandleFunc("GET /api/v1/stats/daily", h.getDailyStats)
 	mux.HandleFunc("GET /api/v1/stats/range", h.getRangeStats)
+	mux.HandleFunc("GET /api/v1/stats/years", h.getAvailableYears)
+	mux.HandleFunc("GET /api/v1/stats/yearly", h.getYearlyActivity)
 
 	// Sync endpoints
 	mux.HandleFunc("POST /api/v1/sync", h.triggerSync)
@@ -596,6 +598,48 @@ func (h *Handler) getSyncStatus(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"last_synced_day": lastSynced.Format("2006-01-02"),
+	})
+}
+
+// getAvailableYears returns all years that have activity data
+// GET /api/v1/stats/years
+func (h *Handler) getAvailableYears(w http.ResponseWriter, r *http.Request) {
+	years, err := h.db.GetAvailableYears()
+	if err != nil {
+		slog.Error("failed to get available years", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to get available years")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"years": years,
+	})
+}
+
+// getYearlyActivity returns daily activity data for an entire year (for heatmap)
+// GET /api/v1/stats/yearly?year=2024
+func (h *Handler) getYearlyActivity(w http.ResponseWriter, r *http.Request) {
+	yearStr := r.URL.Query().Get("year")
+	if yearStr == "" {
+		yearStr = strconv.Itoa(time.Now().Year())
+	}
+
+	year, err := strconv.Atoi(yearStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid year format")
+		return
+	}
+
+	activity, err := h.db.GetYearlyActivity(year)
+	if err != nil {
+		slog.Error("failed to get yearly activity", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to get yearly activity")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"year": year,
+		"data": activity,
 	})
 }
 
