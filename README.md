@@ -55,7 +55,9 @@ Copy the example config and edit it:
 cp config.example.yaml config.yaml
 ```
 
-See the Configuration Options section below for details. Then run:
+Set `database_path` to `/app/data/wakatime.db` and fill in your WakaTime API key.
+
+Then run:
 
 ```bash
 docker run -d \
