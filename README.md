@@ -31,9 +31,10 @@ This project was developed with assistance from AI/LLMs, supervised and modified
 
 ## Migration from Old Project
 
-If you have existing data in the old MySQL database (([charlie0129/wakatime-sync](https://github.com/charlie0129/wakatime-sync) or [wf2311/wakatime-sync](https://github.com/wf2311/wakatime-sync))), use the migration script:
+If you have existing data in the old MySQL database ([charlie0129/wakatime-sync](https://github.com/charlie0129/wakatime-sync) or [wf2311/wakatime-sync](https://github.com/wf2311/wakatime-sync)), use the migration script:
 
-> Make sure you have SQLite 3.45.0+ installed to support JSONB.
+> [!NOTE]
+> Make sure your python is new enough (>=3.12) because we need JSONB in SQLite 3.45.0+.
 
 ```bash
 cd scripts
