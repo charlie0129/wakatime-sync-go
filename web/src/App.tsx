@@ -491,7 +491,17 @@ function App() {
                     <ChevronLeft size={16} />
                     Prev
                   </button>
-                  <span className="timeline-date">{formatDisplayDate(durationDate)}</span>
+                  <input
+                    type="date"
+                    className="date-input timeline-date-input"
+                    value={durationDateStr}
+                    max={formatDate(subDays(new Date(), 1))}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setDurationDate(parseISO(e.target.value));
+                      }
+                    }}
+                  />
                   <button
                     className="nav-button"
                     onClick={() => setDurationDate(addDays(durationDate, 1))}

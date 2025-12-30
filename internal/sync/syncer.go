@@ -3,6 +3,7 @@ package sync
 import (
 	"encoding/json"
 	"log/slog"
+	"os"
 	"time"
 
 	"github.com/charlie0129/wakatime-sync-go/internal/config"
@@ -39,7 +40,12 @@ func dependenciesToString(deps []string) string {
 
 func (s *Syncer) StartScheduler() {
 	// Sync yesterday's data immediately on startup
-	s.SyncYesterday()
+	if v := os.Getenv("SKIP_INITIAL_SYNC"); v == "1" || v == "true" {
+		slog.Info("skipping initial sync due to SKIP_INITIAL_SYNC env var")
+	} else {
+		slog.Info("performing initial sync for yesterday's data")
+		s.SyncYesterday()
+	}
 
 	// Set up cron scheduler with configured timezone
 	loc := s.cfg.GetTimezone()

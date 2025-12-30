@@ -330,6 +330,11 @@
   font-weight: 500;
 }
 
+.timeline-date-input {
+  min-width: 140px;
+  text-align: center;
+}
+
 /* Loading State */
 .loading {
   display: flex;

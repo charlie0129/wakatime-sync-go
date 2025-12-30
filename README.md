@@ -157,6 +157,8 @@ Configuration can be provided via YAML file or environment variables. Environmen
 | `sync_schedule`    | `SYNC_SCHEDULE`      | Cron schedule for auto sync                  | `0 1 * * *`   |
 | `timezone`         | `TIMEZONE`           | Timezone for date calculations and sync cron | `Local`       |
 
+If you want to skip the initial sync on startup, set `SKIP_INITIAL_SYNC=true` environment variable.
+
 ## Development Setup
 
 ### 1. Configuration
