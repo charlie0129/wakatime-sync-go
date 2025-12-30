@@ -4,7 +4,7 @@ A lightweight Go application to sync and visualize your WakaTime coding statisti
 
 This is a rewrite of the original Java/Spring version ([charlie0129/wakatime-sync](https://github.com/charlie0129/wakatime-sync), fork of [wf2311/wakatime-sync](https://github.com/wf2311/wakatime-sync)) using Go + SQLite (no CGO) + React.
 
-<img width="2766" height="5266" alt="image" src="https://github.com/user-attachments/assets/d16ef5f8-6e0a-40fc-94c2-7b61dd2d86f0" />
+<img width="2766" height="5266" alt="image" src="https://github.com/user-attachments/assets/fd5e9779-73eb-43a1-9105-571d51805b9f" />
 
 ## Why a Rewrite?
 
