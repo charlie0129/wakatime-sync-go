@@ -12,7 +12,7 @@ It's a personal preference. I don't like Java/Spring that much and the old proje
 
 - I don't want log rotation in the application, which should be handled by the Docker or Kubelet. Common sense. Don't do something that is not your responsibility.
 - I don't want any external database dependency like MySQL. Harder to operate, consumes more resources, and overkill for such project. SQLite is a no-brainer, no second choice here.
-- Spring + Java is just too heavy. Consumes a ton of memory. The image size is huge. Using CPU even on idle. I just cannot tolerate that on my personal server. Just use Go, it's simple, efficient, and compiles to a single binary. That's hundreds of MBs to several MBs reduction right there, both image size and memory usage.
+- Spring + Java is just too heavy. Consumes a ton of memory. The image size is huge. I just cannot tolerate this thing on my personal server, wasting my resources. Just use Go, it's simple, efficient, and compiles to a single binary. That's hundreds of MBs to several MBs, over **10x reduction** right there, both image size and memory usage.
 - I don't like Java. Come on, who likes Java nowadays?
 
 Over the years, I have always wanted to rewrite the old project but never got around to it. Mostly because the old one still works (if it ain't broke, don't fix it) and I don't have that much time for this. Finally, with the help of AI/LLMs, I am able to get this project started and finished quickly without taking much time.
