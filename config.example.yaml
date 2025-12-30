@@ -1,0 +1,24 @@
+# WakaTime Sync Configuration
+
+# Server address
+listen_addr: ":3040"
+
+# SQLite database path
+database_path: "wakatime.db"
+
+# WakaTime API key
+# Get it from https://wakatime.com/settings/api-key
+wakatime_api_key: "YOUR_API_KEY_HERE"
+
+# Proxy URL (optional, set to empty or "false" to disable)
+# Examples: socks5://127.0.0.1:1080, http://proxy:8080
+proxy_url: ""
+
+# Start date for historical data sync
+start_date: "2016-01-01"
+
+# Cron schedule for daily sync (default: 1 AM)
+sync_schedule: "0 1 * * *"
+
+# Timezone for date calculations
+timezone: "Local"
