@@ -1,3 +1,5 @@
 config.yaml
 *.db
+*.db-journal
+*.wal
 .DS_Store

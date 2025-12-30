@@ -42,7 +42,7 @@ python3 migrate.py \
   --mysql-user wakatime \
   --mysql-password YOUR_PASSWORD \
   --mysql-db wakatime \
-  --sqlite-path wakatime.db
+  --sqlite-path ../wakatime.db
 ```
 
 ## Docker
