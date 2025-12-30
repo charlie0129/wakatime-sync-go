@@ -56,7 +56,7 @@ func (db *DB) migrate() error {
 			project TEXT,
 			start_time REAL NOT NULL,
 			duration REAL NOT NULL,
-			dependencies TEXT,
+			dependencies JSONB,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_durations_day ON durations(day)`,
@@ -73,7 +73,7 @@ func (db *DB) migrate() error {
 			type TEXT,
 			start_time REAL NOT NULL,
 			duration REAL NOT NULL,
-			dependencies TEXT,
+			dependencies JSONB,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_project_durations_day ON project_durations(day)`,
@@ -152,8 +152,8 @@ func (db *DB) DeleteDurationsByDay(day time.Time) error {
 func (db *DB) InsertDuration(d *Duration) error {
 	_, err := db.Exec(`
 		INSERT INTO durations (day, project, start_time, duration, dependencies, created_at)
-		VALUES (?, ?, ?, ?, ?, ?)
-	`, d.Day.Format("2006-01-02"), d.Project, d.StartTime, d.Duration, d.Dependencies, time.Now())
+		VALUES (?, ?, ?, ?, CASE WHEN ? = '' OR ? IS NULL THEN NULL ELSE jsonb(?) END, ?)
+	`, d.Day.Format("2006-01-02"), d.Project, d.StartTime, d.Duration, d.Dependencies, d.Dependencies, d.Dependencies, time.Now())
 	return err
 }
 
@@ -166,7 +166,7 @@ func (db *DB) InsertDurations(durations []Duration) error {
 
 	stmt, err := tx.Prepare(`
 		INSERT INTO durations (day, project, start_time, duration, dependencies, created_at)
-		VALUES (?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, CASE WHEN ? = '' OR ? IS NULL THEN NULL ELSE jsonb(?) END, ?)
 	`)
 	if err != nil {
 		return err
@@ -174,7 +174,7 @@ func (db *DB) InsertDurations(durations []Duration) error {
 	defer stmt.Close()
 
 	for _, d := range durations {
-		_, err := stmt.Exec(d.Day.Format("2006-01-02"), d.Project, d.StartTime, d.Duration, d.Dependencies, time.Now())
+		_, err := stmt.Exec(d.Day.Format("2006-01-02"), d.Project, d.StartTime, d.Duration, d.Dependencies, d.Dependencies, d.Dependencies, time.Now())
 		if err != nil {
 			return err
 		}
@@ -228,7 +228,7 @@ func (db *DB) InsertProjectDurations(durations []ProjectDuration) error {
 
 	stmt, err := tx.Prepare(`
 		INSERT INTO project_durations (day, project, branch, entity, language, type, start_time, duration, dependencies, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = '' OR ? IS NULL THEN NULL ELSE jsonb(?) END, ?)
 	`)
 	if err != nil {
 		return err
@@ -238,7 +238,7 @@ func (db *DB) InsertProjectDurations(durations []ProjectDuration) error {
 	for _, d := range durations {
 		_, err := stmt.Exec(
 			d.Day.Format("2006-01-02"), d.Project, d.Branch, d.Entity, d.Language,
-			d.Type, d.StartTime, d.Duration, d.Dependencies, time.Now(),
+			d.Type, d.StartTime, d.Duration, d.Dependencies, d.Dependencies, d.Dependencies, time.Now(),
 		)
 		if err != nil {
 			return err

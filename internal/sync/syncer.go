@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"encoding/json"
 	"log/slog"
 	"time"
 
@@ -23,6 +24,17 @@ func NewSyncer(cfg *config.Config, db *database.DB) *Syncer {
 		db:     db,
 		client: wakatime.NewClient(cfg.WakaTimeAPI, cfg.ProxyURL),
 	}
+}
+
+// dependenciesToString converts a dependencies array to a JSON string for storage
+func dependenciesToString(deps []string) string {
+	// Always return valid JSON, even for empty arrays
+	b, err := json.Marshal(deps)
+	if err != nil {
+		// Return empty JSON array on error
+		return "[]"
+	}
+	return string(b)
 }
 
 func (s *Syncer) StartScheduler() {
@@ -269,7 +281,7 @@ func (s *Syncer) syncDurations(day time.Time) error {
 			Project:      d.Project,
 			StartTime:    d.Time,
 			Duration:     d.Duration,
-			Dependencies: d.Dependencies,
+			Dependencies: dependenciesToString(d.Dependencies),
 		})
 	}
 
@@ -302,7 +314,7 @@ func (s *Syncer) syncDurations(day time.Time) error {
 				Type:         d.Type,
 				StartTime:    d.Time,
 				Duration:     d.Duration,
-				Dependencies: d.Dependencies,
+				Dependencies: dependenciesToString(d.Dependencies),
 			})
 		}
 	}

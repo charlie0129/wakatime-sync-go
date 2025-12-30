@@ -31,6 +31,8 @@ This project was developed with assistance from AI/LLMs, supervised and modified
 
 If you have existing data in the old MySQL database (([charlie0129/wakatime-sync](https://github.com/charlie0129/wakatime-sync) or [wf2311/wakatime-sync](https://github.com/wf2311/wakatime-sync))), use the migration script:
 
+> Make sure you have SQLite 3.45.0+ installed to support JSONB.
+
 ```bash
 cd scripts
 python3 -m venv .venv
@@ -46,6 +48,14 @@ python3 migrate.py \
 ```
 
 ## Docker
+
+Copy the example config and edit it:
+
+```bash
+cp config.example.yaml config.yaml
+```
+
+See the Configuration Options section below for details. Then run:
 
 ```bash
 docker run -d \

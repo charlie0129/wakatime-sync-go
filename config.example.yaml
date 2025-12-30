@@ -20,5 +20,5 @@ start_date: "2016-01-01"
 # Cron schedule for daily sync (default: 1 AM)
 sync_schedule: "0 1 * * *"
 
-# Timezone for date calculations
+# Timezone for date calculations, e.g., "Asia/Shanghai", "America/New_York"
 timezone: "Local"

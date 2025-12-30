@@ -84,18 +84,18 @@ type DurationResponse struct {
 }
 
 type DurationData struct {
-	Project        string  `json:"project"`
-	Time           float64 `json:"time"`
-	Duration       float64 `json:"duration"`
-	Branch         string  `json:"branch,omitempty"`
-	Entity         string  `json:"entity,omitempty"`
-	Language       string  `json:"language,omitempty"`
-	Dependencies   string  `json:"dependencies,omitempty"`
-	Type           string  `json:"type,omitempty"`
-	AIAdditions    int     `json:"ai_additions,omitempty"`
-	AIDeletions    int     `json:"ai_deletions,omitempty"`
-	HumanAdditions int     `json:"human_additions,omitempty"`
-	HumanDeletions int     `json:"human_deletions,omitempty"`
+	Project        string   `json:"project"`
+	Time           float64  `json:"time"`
+	Duration       float64  `json:"duration"`
+	Branch         string   `json:"branch,omitempty"`
+	Entity         string   `json:"entity,omitempty"`
+	Language       string   `json:"language,omitempty"`
+	Dependencies   []string `json:"dependencies,omitempty"`
+	Type           string   `json:"type,omitempty"`
+	AIAdditions    int      `json:"ai_additions,omitempty"`
+	AIDeletions    int      `json:"ai_deletions,omitempty"`
+	HumanAdditions int      `json:"human_additions,omitempty"`
+	HumanDeletions int      `json:"human_deletions,omitempty"`
 }
 
 type HeartbeatResponse struct {
