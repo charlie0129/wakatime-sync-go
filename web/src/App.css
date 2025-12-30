@@ -413,3 +413,7 @@
   border-radius: 3px;
   transition: width 0.3s ease;
 }
+
+.daily-duration-date-input {
+  padding: 4px 12px;
+}

@@ -493,7 +493,7 @@ function App() {
                   </button>
                   <input
                     type="date"
-                    className="date-input timeline-date-input"
+                    className="date-input timeline-date-input daily-duration-date-input"
                     value={durationDateStr}
                     max={formatDate(subDays(new Date(), 1))}
                     onChange={(e) => {
