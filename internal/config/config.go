@@ -8,13 +8,14 @@ import (
 )
 
 type Config struct {
-	ListenAddr   string `yaml:"listen_addr"`
-	DatabasePath string `yaml:"database_path"`
-	WakaTimeAPI  string `yaml:"wakatime_api_key"`
-	ProxyURL     string `yaml:"proxy_url"`
-	StartDate    string `yaml:"start_date"`
-	SyncSchedule string `yaml:"sync_schedule"` // cron expression for daily sync
-	Timezone     string `yaml:"timezone"`
+	ListenAddr      string `yaml:"listen_addr"`
+	DatabasePath    string `yaml:"database_path"`
+	WakaTimeAPI     string `yaml:"wakatime_api_key"`
+	WakaTimeBaseURL string `yaml:"wakatime_base_url"`
+	ProxyURL        string `yaml:"proxy_url"`
+	StartDate       string `yaml:"start_date"`
+	SyncSchedule    string `yaml:"sync_schedule"` // cron expression for daily sync
+	Timezone        string `yaml:"timezone"`
 }
 
 func Load(path string) (*Config, error) {
@@ -42,6 +43,9 @@ func Load(path string) (*Config, error) {
 	}
 	if envWakaTimeAPI := os.Getenv("WAKATIME_API_KEY"); envWakaTimeAPI != "" {
 		cfg.WakaTimeAPI = envWakaTimeAPI
+	}
+	if envWakaTimeBaseURL := os.Getenv("WAKATIME_BASE_URL"); envWakaTimeBaseURL != "" {
+		cfg.WakaTimeBaseURL = envWakaTimeBaseURL
 	}
 	if envProxyURL := os.Getenv("PROXY_URL"); envProxyURL != "" {
 		cfg.ProxyURL = envProxyURL
@@ -72,17 +76,21 @@ func Load(path string) (*Config, error) {
 	if cfg.Timezone == "" {
 		cfg.Timezone = "Local"
 	}
+	if cfg.WakaTimeBaseURL == "" {
+		cfg.WakaTimeBaseURL = "https://wakatime.com/api/v1"
+	}
 
 	return cfg, nil
 }
 
 func defaultConfig() *Config {
 	return &Config{
-		ListenAddr:   ":3040",
-		DatabasePath: "wakatime.db",
-		StartDate:    "2016-01-01",
-		SyncSchedule: "0 1 * * *",
-		Timezone:     "Local",
+		ListenAddr:      ":3040",
+		DatabasePath:    "wakatime.db",
+		StartDate:       "2016-01-01",
+		SyncSchedule:    "0 1 * * *",
+		Timezone:        "Local",
+		WakaTimeBaseURL: "https://wakatime.com/api/v1",
 	}
 }
 

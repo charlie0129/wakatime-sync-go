@@ -68,6 +68,18 @@ docker run -d \
   ghcr.io/charlie0129/wakatime-sync-go
 ```
 
+For self-hosted WakaTime instances, you can also specify a custom base URL:
+
+```bash
+docker run -d \
+  -p 3040:3040 \
+  -e WAKATIME_API_KEY=your_api_key_here \
+  -e WAKATIME_BASE_URL=https://your-wakatime-instance.com/api/v1 \
+  -e DATABASE_PATH=/app/data/wakatime.db \
+  -v $(pwd)/data:/app/data \
+  ghcr.io/charlie0129/wakatime-sync-go
+```
+
 Or with Docker Compose:
 
 ```yaml
@@ -86,6 +98,8 @@ services:
       - START_DATE=2020-01-01
       - SYNC_SCHEDULE=0 1 * * *
       - TIMEZONE=America/New_York
+      # Optional: for self-hosted WakaTime instances
+      # - WAKATIME_BASE_URL=https://your-wakatime-instance.com/api/v1
     volumes:
       - ./data:/app/data
 ```
@@ -147,15 +161,16 @@ curl -X POST "http://localhost:3040/api/v1/sync?days=30&api_key=YOUR_API_KEY"
 
 Configuration can be provided via YAML file or environment variables. Environment variables take precedence over config file values.
 
-| Option             | Environment Variable | Description                                  | Default       |
-| ------------------ | -------------------- | -------------------------------------------- | ------------- |
-| `listen_addr`      | `LISTEN_ADDR`        | Server listen address                        | `:3040`       |
-| `database_path`    | `DATABASE_PATH`      | SQLite database file path                    | `wakatime.db` |
-| `wakatime_api_key` | `WAKATIME_API_KEY`   | Your WakaTime API key                        | required      |
-| `proxy_url`        | `PROXY_URL`          | HTTP/SOCKS5 proxy for WakaTime API           | empty         |
-| `start_date`       | `START_DATE`         | Start date for historical sync               | `2016-01-01`  |
-| `sync_schedule`    | `SYNC_SCHEDULE`      | Cron schedule for auto sync                  | `0 1 * * *`   |
-| `timezone`         | `TIMEZONE`           | Timezone for date calculations and sync cron | `Local`       |
+| Option                | Environment Variable  | Description                                          | Default                           |
+| --------------------- | --------------------- | ---------------------------------------------------- | --------------------------------- |
+| `listen_addr`         | `LISTEN_ADDR`         | Server listen address                                | `:3040`                           |
+| `database_path`       | `DATABASE_PATH`       | SQLite database file path                            | `wakatime.db`                     |
+| `wakatime_api_key`    | `WAKATIME_API_KEY`    | Your WakaTime API key                                | required                          |
+| `wakatime_base_url`   | `WAKATIME_BASE_URL`   | WakaTime API base URL (for self-hosted instances)    | `https://wakatime.com/api/v1`     |
+| `proxy_url`           | `PROXY_URL`           | HTTP/SOCKS5 proxy for WakaTime API                   | empty                             |
+| `start_date`          | `START_DATE`          | Start date for historical sync                       | `2016-01-01`                      |
+| `sync_schedule`       | `SYNC_SCHEDULE`       | Cron schedule for auto sync                          | `0 1 * * *`                       |
+| `timezone`            | `TIMEZONE`            | Timezone for date calculations and sync cron         | `Local`                           |
 
 If you want to skip the initial sync on startup, set `SKIP_INITIAL_SYNC=true` environment variable.
 

@@ -23,7 +23,7 @@ func NewSyncer(cfg *config.Config, db *database.DB) *Syncer {
 	return &Syncer{
 		cfg:    cfg,
 		db:     db,
-		client: wakatime.NewClient(cfg.WakaTimeAPI, cfg.ProxyURL),
+		client: wakatime.NewClientWithBaseURL(cfg.WakaTimeAPI, cfg.ProxyURL, cfg.WakaTimeBaseURL),
 	}
 }
 

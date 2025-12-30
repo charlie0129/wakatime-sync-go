@@ -14,10 +14,15 @@ const BaseURL = "https://wakatime.com/api/v1"
 
 type Client struct {
 	apiKey     string
+	baseURL    string
 	httpClient *http.Client
 }
 
 func NewClient(apiKey string, proxyURL string) *Client {
+	return NewClientWithBaseURL(apiKey, proxyURL, BaseURL)
+}
+
+func NewClientWithBaseURL(apiKey string, proxyURL string, baseURL string) *Client {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 
 	if proxyURL != "" && proxyURL != "false" {
@@ -26,8 +31,13 @@ func NewClient(apiKey string, proxyURL string) *Client {
 		}
 	}
 
+	if baseURL == "" {
+		baseURL = BaseURL
+	}
+
 	return &Client{
-		apiKey: apiKey,
+		apiKey:  apiKey,
+		baseURL: baseURL,
 		httpClient: &http.Client{
 			Transport: transport,
 			Timeout:   30 * time.Second,
@@ -36,7 +46,7 @@ func NewClient(apiKey string, proxyURL string) *Client {
 }
 
 func (c *Client) doRequest(endpoint string, params map[string]string) ([]byte, error) {
-	reqURL, err := url.Parse(BaseURL + endpoint)
+	reqURL, err := url.Parse(c.baseURL + endpoint)
 	if err != nil {
 		return nil, err
 	}
