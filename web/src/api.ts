@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.DEV ? 'http://localhost:3040' : '';
+const API_BASE = import.meta.env.DEV ? 'http://localhost:3040' : window.location.origin;
 
 export interface DurationData {
   project: string;
