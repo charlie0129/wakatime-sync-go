@@ -11,6 +11,7 @@ import './ActivityGraph.css';
 
 interface ActivityGraphProps {
   onYearChange?: (year: number) => void;
+  onDayClick?: (date: Date) => void;
 }
 
 // Color levels for the heatmap (GitHub-style greens) - 9 levels for finer granularity
@@ -49,7 +50,7 @@ interface TooltipData {
   y: number;
 }
 
-export default function ActivityGraph({ onYearChange }: ActivityGraphProps) {
+export default function ActivityGraph({ onYearChange, onDayClick }: ActivityGraphProps) {
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [yearlyData, setYearlyData] = useState<YearlyActivityDay[]>([]);
@@ -307,7 +308,7 @@ export default function ActivityGraph({ onYearChange }: ActivityGraphProps) {
                       return (
                         <div
                           key={dayIndex}
-                          className={`day-cell ${level === -1 ? 'empty' : ''}`}
+                          className={`day-cell ${level === -1 ? 'empty' : ''} ${level >= 0 ? 'clickable' : ''}`}
                           style={{
                             backgroundColor: level >= 0 ? LEVEL_COLORS[level] : 'transparent',
                           }}
@@ -317,6 +318,11 @@ export default function ActivityGraph({ onYearChange }: ActivityGraphProps) {
                             }
                           }}
                           onMouseLeave={handleMouseLeave}
+                          onClick={() => {
+                            if (level >= 0 && onDayClick) {
+                              onDayClick(day.date);
+                            }
+                          }}
                         />
                       );
                     })}

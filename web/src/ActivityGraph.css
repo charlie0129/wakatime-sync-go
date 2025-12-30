@@ -167,9 +167,17 @@
   transition: transform 0.1s, box-shadow 0.1s;
 }
 
+.day-cell.clickable {
+  cursor: pointer;
+}
+
 .day-cell:not(.empty):hover {
   transform: scale(1.2);
   box-shadow: 0 0 4px rgba(57, 211, 83, 0.4);
+}
+
+.day-cell:not(.empty):active {
+  transform: scale(1.15);
 }
 
 .day-cell.empty {

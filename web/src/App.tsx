@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area
@@ -12,6 +12,23 @@ import { subDays, addDays, parseISO } from 'date-fns';
 import './App.css';
 import ActivityGraph from './ActivityGraph';
 import TimelineSpectrum from './TimelineSpectrum';
+
+// Custom hook to debounce a value
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 interface CustomTooltipProps {
   active?: boolean;
@@ -76,17 +93,28 @@ const tooltipStyle = {
 
 function App() {
   const [dateRange, setDateRange] = useState<DateRange>('last7days');
-  const [customStart, setCustomStart] = useState<Date>(subDays(new Date(), 7));
-  const [customEnd, setCustomEnd] = useState<Date>(subDays(new Date(), 1));
+  // Input values (what user sees/types)
+  const [customStartInput, setCustomStartInput] = useState<Date>(subDays(new Date(), 7));
+  const [customEndInput, setCustomEndInput] = useState<Date>(subDays(new Date(), 1));
+  // Debounced values (what triggers API calls)
+  const customStart = useDebouncedValue(customStartInput, 500);
+  const customEnd = useDebouncedValue(customEndInput, 500);
+  
   const [summaries, setSummaries] = useState<SummariesResponse | null>(null);
   const [rangeStats, setRangeStats] = useState<RangeStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastSynced, setLastSynced] = useState<string>('');
 
   // Duration view state
-  const [durationDate, setDurationDate] = useState<Date>(subDays(new Date(), 1));
+  // Input value (what user sees/types)
+  const [durationDateInput, setDurationDateInput] = useState<Date>(subDays(new Date(), 1));
+  // Debounced value (what triggers API calls)
+  const durationDate = useDebouncedValue(durationDateInput, 500);
   const [durations, setDurations] = useState<DurationResponse | null>(null);
   const [durationLoading, setDurationLoading] = useState(false);
+
+  // Ref for scrolling to timeline
+  const timelineRef = useRef<HTMLDivElement>(null);
 
   // Memoize date range to prevent infinite re-renders
   const { start, end } = useMemo(
@@ -145,8 +173,17 @@ function App() {
     seconds: day.grand_total.total_seconds,
   })) || [];
 
-  const canGoNext = addDays(durationDate, 1) < new Date();
+  const canGoNext = addDays(durationDateInput, 1) < new Date();
   const canGoPrev = true;
+
+  // Handle day click from activity graph
+  const handleDayClick = useCallback((date: Date) => {
+    setDurationDateInput(date);
+    // Scroll to timeline after a short delay to ensure state update
+    setTimeout(() => {
+      timelineRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }, []);
 
   return (
     <div className="app">
@@ -187,9 +224,9 @@ function App() {
             <input
               type="date"
               className="date-input"
-              value={formatDate(customStart)}
+              value={formatDate(customStartInput)}
               onChange={(e) => {
-                setCustomStart(parseISO(e.target.value));
+                setCustomStartInput(parseISO(e.target.value));
                 setDateRange('custom');
               }}
             />
@@ -197,9 +234,9 @@ function App() {
             <input
               type="date"
               className="date-input"
-              value={formatDate(customEnd)}
+              value={formatDate(customEndInput)}
               onChange={(e) => {
-                setCustomEnd(parseISO(e.target.value));
+                setCustomEndInput(parseISO(e.target.value));
                 setDateRange('custom');
               }}
             />
@@ -473,10 +510,10 @@ function App() {
             </div>
 
             {/* Activity Graph (GitHub-style heatmap) */}
-            <ActivityGraph />
+            <ActivityGraph onDayClick={handleDayClick} />
 
             {/* Duration Timeline */}
-            <div className="chart-card duration-timeline">
+            <div className="chart-card duration-timeline" ref={timelineRef}>
               <div className="timeline-header">
                 <div className="chart-title">
                   <Clock size={18} />
@@ -485,7 +522,7 @@ function App() {
                 <div className="timeline-nav">
                   <button
                     className="nav-button"
-                    onClick={() => setDurationDate(subDays(durationDate, 1))}
+                    onClick={() => setDurationDateInput(subDays(durationDateInput, 1))}
                     disabled={!canGoPrev}
                   >
                     <ChevronLeft size={16} />
@@ -494,17 +531,17 @@ function App() {
                   <input
                     type="date"
                     className="date-input timeline-date-input daily-duration-date-input"
-                    value={durationDateStr}
+                    value={formatDate(durationDateInput)}
                     max={formatDate(subDays(new Date(), 1))}
                     onChange={(e) => {
                       if (e.target.value) {
-                        setDurationDate(parseISO(e.target.value));
+                        setDurationDateInput(parseISO(e.target.value));
                       }
                     }}
                   />
                   <button
                     className="nav-button"
-                    onClick={() => setDurationDate(addDays(durationDate, 1))}
+                    onClick={() => setDurationDateInput(addDays(durationDateInput, 1))}
                     disabled={!canGoNext}
                   >
                     Next
