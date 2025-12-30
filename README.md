@@ -75,15 +75,15 @@ You can put whatever reverse proxy in front of it (Caddy, Nginx, Traefik, etc.) 
 
 ## Configuration Options
 
-| Option             | Description                        | Default       |
-| ------------------ | ---------------------------------- | ------------- |
-| `listen_addr`      | Server listen address              | `:3040`       |
-| `database_path`    | SQLite database file path          | `wakatime.db` |
-| `wakatime_api_key` | Your WakaTime API key (base64)     | required      |
-| `proxy_url`        | HTTP/SOCKS5 proxy for WakaTime API | empty         |
-| `start_date`       | Start date for historical sync     | `2016-01-01`  |
-| `sync_schedule`    | Cron schedule for auto sync        | `0 1 * * *`   |
-| `timezone`         | Timezone for date calculations     | `Local`       |
+| Option             | Description                                  | Default       |
+| ------------------ | -------------------------------------------- | ------------- |
+| `listen_addr`      | Server listen address                        | `:3040`       |
+| `database_path`    | SQLite database file path                    | `wakatime.db` |
+| `wakatime_api_key` | Your WakaTime API key                        | required      |
+| `proxy_url`        | HTTP/SOCKS5 proxy for WakaTime API           | empty         |
+| `start_date`       | Start date for historical sync               | `2016-01-01`  |
+| `sync_schedule`    | Cron schedule for auto sync                  | `0 1 * * *`   |
+| `timezone`         | Timezone for date calculations and sync cron | `Local`       |
 
 ## Development Setup
 
