@@ -79,7 +79,7 @@ func (s *Syncer) Stop() {
 }
 
 func (s *Syncer) SyncYesterday() {
-	yesterday := time.Now().AddDate(0, 0, -1)
+	yesterday := time.Now().In(s.cfg.GetTimezone()).AddDate(0, 0, -1)
 	if err := s.SyncDay(yesterday); err != nil {
 		slog.Error("failed to sync yesterday's data", "date", yesterday.Format("2006-01-02"), "error", err)
 	}
