@@ -56,7 +56,7 @@ func Load(path string) (*Config, error) {
 	if envSyncSchedule := os.Getenv("SYNC_SCHEDULE"); envSyncSchedule != "" {
 		cfg.SyncSchedule = envSyncSchedule
 	}
-	if envTimezone := os.Getenv("TIMEZONE"); envTimezone != "" {
+	if envTimezone := os.Getenv("TZ"); envTimezone != "" {
 		cfg.Timezone = envTimezone
 	}
 

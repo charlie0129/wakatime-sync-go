@@ -41,6 +41,8 @@ func main() {
 	}
 	defer db.Close()
 
+	slog.Info("local time", "time", time.Now().Format(time.RFC3339))
+
 	// Initialize syncer
 	syncer := sync.NewSyncer(cfg, db)
 

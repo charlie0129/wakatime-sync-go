@@ -1,28 +1,37 @@
 # WakaTime Sync Configuration
 
 # Server address
+# Can be overridden by the LISTEN_ADDR environment variable.
 listen_addr: ":3040"
 
 # SQLite database path
+# Can be overridden by the DATABASE_PATH environment variable.
 database_path: "wakatime.db"
 
 # WakaTime API key
+# Can be overridden by the WAKATIME_API_KEY environment variable.
 # Get it from https://wakatime.com/settings/api-key
 wakatime_api_key: "YOUR_API_KEY_HERE"
 
 # WakaTime API base URL (optional, defaults to https://wakatime.com/api/v1)
 # Useful for self-hosted WakaTime instances
+# Can be overridden by the WAKATIME_BASE_URL environment variable.
 wakatime_base_url: ""
 
 # Proxy URL (optional, set to empty or "false" to disable)
 # Examples: socks5://127.0.0.1:1080, http://proxy:8080
+# Can be overridden by the PROXY_URL environment variable.
 proxy_url: ""
 
 # Start date for historical data sync
+# Can be overridden by the START_DATE environment variable.
 start_date: "2016-01-01"
 
 # Cron schedule for daily sync (default: 1 AM)
+# Can be overridden by the SYNC_SCHEDULE environment variable.
 sync_schedule: "0 1 * * *"
 
 # Timezone for date calculations, e.g., "Asia/Shanghai", "America/New_York"
+# Prefer setting the TZ environment variable for consistency.
+# Can be overridden by the TZ environment variable.
 timezone: "Local"
