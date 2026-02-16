@@ -14,6 +14,7 @@ import (
 	"github.com/charlie0129/wakatime-sync-go/internal/config"
 	"github.com/charlie0129/wakatime-sync-go/internal/database"
 	"github.com/charlie0129/wakatime-sync-go/internal/sync"
+	"github.com/klauspost/compress/gzhttp"
 )
 
 func main() {
@@ -49,6 +50,12 @@ func main() {
 	// Start background sync scheduler
 	go syncer.StartScheduler()
 
+	compressionWrapper, err := gzhttp.NewWrapper(gzhttp.EnableGzip(true), gzhttp.EnableZstd(true), gzhttp.ZstdCompressionLevel(3))
+	if err != nil {
+		slog.Error("failed to create compression wrapper", "error", err)
+		os.Exit(1)
+	}
+
 	// Setup HTTP server
 	handler := api.NewHandler(cfg, db, syncer)
 	mux := http.NewServeMux()
@@ -56,7 +63,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:         cfg.ListenAddr,
-		Handler:      corsMiddleware(mux),
+		Handler:      corsMiddleware(compressionWrapper(mux)),
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
