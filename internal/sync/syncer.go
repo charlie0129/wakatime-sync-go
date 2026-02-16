@@ -13,17 +13,22 @@ import (
 )
 
 type Syncer struct {
-	cfg    *config.Config
-	db     *database.DB
-	client *wakatime.Client
-	cron   *cron.Cron
+	cfg        *config.Config
+	db         *database.DB
+	client     *wakatime.Client
+	cron       *cron.Cron
+	maxRetries int
+	// retryDelay is the base delay for retries, which will be multiplied by the attempt number (exponential backoff)
+	retryDelay time.Duration
 }
 
 func NewSyncer(cfg *config.Config, db *database.DB) *Syncer {
 	return &Syncer{
-		cfg:    cfg,
-		db:     db,
-		client: wakatime.NewClientWithBaseURL(cfg.WakaTimeAPI, cfg.ProxyURL, cfg.WakaTimeBaseURL),
+		cfg:        cfg,
+		db:         db,
+		client:     wakatime.NewClientWithBaseURL(cfg.WakaTimeAPI, cfg.ProxyURL, cfg.WakaTimeBaseURL),
+		maxRetries: 3,
+		retryDelay: 5 * time.Second,
 	}
 }
 
@@ -80,9 +85,28 @@ func (s *Syncer) Stop() {
 
 func (s *Syncer) SyncYesterday() {
 	yesterday := time.Now().In(s.cfg.GetTimezone()).AddDate(0, 0, -1)
-	if err := s.SyncDay(yesterday); err != nil {
-		slog.Error("failed to sync yesterday's data", "date", yesterday.Format("2006-01-02"), "error", err)
+	dateStr := yesterday.Format("2006-01-02")
+
+	var lastErr error
+	for attempt := 0; attempt <= s.maxRetries; attempt++ {
+		if attempt > 0 {
+			delay := s.retryDelay * time.Duration(1<<(attempt-1)) // exponential backoff
+			slog.Info("retrying sync", "date", dateStr, "attempt", attempt, "delay", delay)
+			time.Sleep(delay)
+		}
+
+		if err := s.SyncDay(yesterday); err != nil {
+			lastErr = err
+			slog.Warn("sync attempt failed", "date", dateStr, "attempt", attempt, "error", err)
+			continue
+		}
+
+		// Success
+		return
 	}
+
+	// All retries exhausted
+	slog.Error("failed to sync yesterday's data after all retries", "date", dateStr, "attempts", s.maxRetries+1, "error", lastErr)
 }
 
 func (s *Syncer) SyncDays(days int) error {
