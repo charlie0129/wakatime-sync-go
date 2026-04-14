@@ -110,8 +110,9 @@ func (s *Syncer) SyncYesterday() {
 }
 
 func (s *Syncer) SyncDays(days int) error {
-	end := time.Now().AddDate(0, 0, -1)
-	start := time.Now().AddDate(0, 0, -days)
+	now := time.Now().In(s.cfg.GetTimezone())
+	end := now.AddDate(0, 0, -1)
+	start := now.AddDate(0, 0, -days)
 
 	for d := start; !d.After(end); d = d.AddDate(0, 0, 1) {
 		if err := s.SyncDay(d); err != nil {

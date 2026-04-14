@@ -78,7 +78,7 @@ func parseDate(s string) (time.Time, error) {
 func (h *Handler) getDurations(w http.ResponseWriter, r *http.Request) {
 	dateStr := r.URL.Query().Get("date")
 	if dateStr == "" {
-		dateStr = time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+		dateStr = time.Now().In(h.cfg.GetTimezone()).AddDate(0, 0, -1).Format("2006-01-02")
 	}
 
 	day, err := parseDate(dateStr)
@@ -147,7 +147,7 @@ func (h *Handler) getDurations(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) getHeartbeats(w http.ResponseWriter, r *http.Request) {
 	dateStr := r.URL.Query().Get("date")
 	if dateStr == "" {
-		dateStr = time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+		dateStr = time.Now().In(h.cfg.GetTimezone()).AddDate(0, 0, -1).Format("2006-01-02")
 	}
 
 	day, err := parseDate(dateStr)
@@ -202,8 +202,9 @@ func (h *Handler) getSummaries(w http.ResponseWriter, r *http.Request) {
 
 	if startStr == "" || endStr == "" {
 		// Default to last 7 days
-		endStr = time.Now().AddDate(0, 0, -1).Format("2006-01-02")
-		startStr = time.Now().AddDate(0, 0, -7).Format("2006-01-02")
+		now := time.Now().In(h.cfg.GetTimezone())
+		endStr = now.AddDate(0, 0, -1).Format("2006-01-02")
+		startStr = now.AddDate(0, 0, -7).Format("2006-01-02")
 	}
 
 	start, err := parseDate(startStr)
@@ -430,8 +431,9 @@ func (h *Handler) getDailyStats(w http.ResponseWriter, r *http.Request) {
 
 	if startStr == "" || endStr == "" {
 		// Default to last 30 days
-		endStr = time.Now().AddDate(0, 0, -1).Format("2006-01-02")
-		startStr = time.Now().AddDate(0, 0, -30).Format("2006-01-02")
+		now := time.Now().In(h.cfg.GetTimezone())
+		endStr = now.AddDate(0, 0, -1).Format("2006-01-02")
+		startStr = now.AddDate(0, 0, -30).Format("2006-01-02")
 	}
 
 	start, err := parseDate(startStr)
@@ -483,8 +485,9 @@ func (h *Handler) getRangeStats(w http.ResponseWriter, r *http.Request) {
 	endStr := r.URL.Query().Get("end")
 
 	if startStr == "" || endStr == "" {
-		endStr = time.Now().AddDate(0, 0, -1).Format("2006-01-02")
-		startStr = time.Now().AddDate(0, 0, -7).Format("2006-01-02")
+		now := time.Now().In(h.cfg.GetTimezone())
+		endStr = now.AddDate(0, 0, -1).Format("2006-01-02")
+		startStr = now.AddDate(0, 0, -7).Format("2006-01-02")
 	}
 
 	start, err := parseDate(startStr)
@@ -621,7 +624,7 @@ func (h *Handler) getAvailableYears(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) getYearlyActivity(w http.ResponseWriter, r *http.Request) {
 	yearStr := r.URL.Query().Get("year")
 	if yearStr == "" {
-		yearStr = strconv.Itoa(time.Now().Year())
+		yearStr = strconv.Itoa(time.Now().In(h.cfg.GetTimezone()).Year())
 	}
 
 	year, err := strconv.Atoi(yearStr)
