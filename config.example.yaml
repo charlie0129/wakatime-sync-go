@@ -8,9 +8,10 @@ listen_addr: ":3040"
 # Can be overridden by the DATABASE_PATH environment variable.
 database_path: "wakatime.db"
 
-# WakaTime API key
+# WakaTime API key or secret OAuth token
 # Can be overridden by the WAKATIME_API_KEY environment variable.
-# Get it from https://wakatime.com/settings/api-key
+# API keys are deprecated: get your secret OAuth token (starting with "sec_")
+# from https://wakatime.com/settings/api-key
 wakatime_api_key: "YOUR_API_KEY_HERE"
 
 # WakaTime API base URL (optional, defaults to https://wakatime.com/api/v1)

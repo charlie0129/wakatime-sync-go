@@ -26,11 +26,14 @@ func newFakeWakaTime() *fakeWakaTime {
 	return &fakeWakaTime{responses: map[string]string{}, statuses: map[string]int{}, requests: map[string]int{}}
 }
 
+// The api_key parameter is ignored when matching, like the Authorization header was before it.
 func (f *fakeWakaTime) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	key := r.URL.Path + "?" + r.URL.RawQuery
+	query := r.URL.Query()
+	query.Del("api_key")
+	key := r.URL.Path + "?" + query.Encode()
 	f.requests[key]++
 	if status, ok := f.statuses[key]; ok {
 		w.WriteHeader(status)

@@ -90,6 +90,10 @@ func (c *Client) doRequest(endpoint string, params map[string]string) ([]byte, e
 	for k, v := range params {
 		q.Set(k, v)
 	}
+	// WakaTime accepts both legacy API keys and secret OAuth tokens ("sec_...")
+	// in the api_key parameter; the Authorization header only accepts one or the
+	// other (Basic vs Bearer), so the parameter is the one method that fits both.
+	q.Set("api_key", c.apiKey)
 	reqURL.RawQuery = q.Encode()
 
 	req, err := http.NewRequest(http.MethodGet, reqURL.String(), nil)
@@ -97,7 +101,6 @@ func (c *Client) doRequest(endpoint string, params map[string]string) ([]byte, e
 		return nil, err
 	}
 
-	req.Header.Set("Authorization", "Basic "+c.apiKey)
 	req.Header.Set("Accept", "application/json")
 
 	for attempt := 0; ; attempt++ {

@@ -62,6 +62,30 @@ func TestLooseString(t *testing.T) {
 	}
 }
 
+func TestAPIKeySentAsParameter(t *testing.T) {
+	// Legacy API keys and secret OAuth tokens ("sec_...") both authenticate via
+	// the api_key query parameter, and only that way.
+	for _, key := range []string{
+		"7621f438-81ad-4c1b-8692-89d616d02a93",
+		"sec_0123456789abcdef",
+	} {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api_key"); got != key {
+				t.Errorf("api_key = %q, want %q", got, key)
+			}
+			if got := r.Header.Get("Authorization"); got != "" {
+				t.Errorf("Authorization header = %q, want it unset", got)
+			}
+			w.Write([]byte(`{"data": {"id": "me"}}`))
+		}))
+		defer server.Close()
+
+		if _, err := NewClientWithBaseURL(key, "", server.URL).GetUser(); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 func TestRateLimitedRequestsAreRetried(t *testing.T) {
 	rateLimitWait = time.Millisecond
 	defer func() { rateLimitWait = 30 * time.Second }()

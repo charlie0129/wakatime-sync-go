@@ -181,7 +181,7 @@ Configuration can be provided via YAML file or environment variables. Environmen
 | -------------------- | -------------------- | ------------------------------------------------- | ----------------------------- |
 | `listen_addr`        | `LISTEN_ADDR`        | Server listen address                             | `:3040`                       |
 | `database_path`      | `DATABASE_PATH`      | SQLite database file path                         | `wakatime.db`                 |
-| `wakatime_api_key`   | `WAKATIME_API_KEY`   | Your WakaTime API key                             | required                      |
+| `wakatime_api_key`   | `WAKATIME_API_KEY`   | Your WakaTime API key or secret OAuth token       | required                      |
 | `wakatime_base_url`  | `WAKATIME_BASE_URL`  | WakaTime API base URL (for self-hosted instances) | `https://wakatime.com/api/v1` |
 | `proxy_url`          | `PROXY_URL`          | HTTP/SOCKS5 proxy for WakaTime API                | empty                         |
 | `start_date`         | `START_DATE`         | Start date for historical sync                    | `2016-01-01`                  |
@@ -203,7 +203,7 @@ Copy the example config and edit it:
 cp config.example.yaml config.yaml
 ```
 
-Edit `config.yaml` with your WakaTime API key (get it from https://wakatime.com/settings/api-key):
+Edit `config.yaml` with your WakaTime API key or secret OAuth token (get it from https://wakatime.com/settings/api-key; API keys are deprecated in favor of OAuth tokens, and both work here):
 
 ```yaml
 listen_addr: ":3040"
