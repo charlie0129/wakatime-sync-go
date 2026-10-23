@@ -1,566 +1,204 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, AreaChart, Area
-} from 'recharts';
-import { Clock, Calendar, Code, Monitor, Layers, ChevronLeft, ChevronRight, Activity } from 'lucide-react';
+import { useCallback, useState } from 'react';
 import { api } from './api';
-import type { SummariesResponse, RangeStats, DurationResponse } from './api';
-import { formatDate, formatDisplayDate, formatDuration, formatHours, getDateRange, getColor } from './utils';
-import type { DateRange } from './utils';
-import { subDays, addDays, parseISO } from 'date-fns';
+import type { Dashboard } from './api';
+import AISection from './AISection';
+import Calendar from './Calendar';
+import { BarList, Figures, Section } from './components';
+import type { Figure } from './components';
+import { countDays, rangeQuery } from './dates';
+import type { Range } from './dates';
+import { describeChange, formatDuration, formatRange, formatShare, formatShortDate } from './format';
+import { useData, useRange, useTick } from './hooks';
+import Rhythm from './Rhythm';
+import TopBar from './TopBar';
 import './App.css';
-import ActivityGraph from './ActivityGraph';
-import TimelineSpectrum from './TimelineSpectrum';
 
-// Custom hook to debounce a value
-function useDebouncedValue<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+// How often to refresh the sync state, which also shows the progress of a sync
+const STATUS_INTERVAL = 15_000;
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
+export default function App() {
+  const [range, setRange] = useRange();
+  // The year the calendar shows, when chosen; otherwise that of the range
+  const [calendarYear, setCalendarYear] = useState<number | null>(null);
+  const key = rangeQuery(range);
 
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [value, delay]);
+  const loadDashboard = useCallback((signal: AbortSignal) => api.dashboard(range, signal), [range]);
+  const loadActivity = useCallback((signal: AbortSignal) => api.activity(range, signal), [range]);
+  const dashboard = useData(key, loadDashboard);
+  const activity = useData(key, loadActivity);
+  const dash = dashboard.data;
 
-  return debouncedValue;
-}
+  // The projects of a single day are drawn from its durations
+  const day = dash && !dashboard.loading && dash.start === dash.end ? dash.start : null;
+  const loadDurations = useCallback((signal: AbortSignal) => api.durations(day!, signal), [day]);
+  const durations = useData(day !== null ? `durations:${day}` : null, loadDurations);
 
-interface CustomTooltipProps {
-  active?: boolean;
-  payload?: Array<{ value: number; name: string; payload: Record<string, unknown> }>;
-  label?: string;
-}
+  const tick = useTick(STATUS_INTERVAL);
+  const loadStatus = useCallback((signal: AbortSignal) => api.syncStatus(signal), []);
+  const status = useData(`status:${tick}`, loadStatus);
 
-function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
-  if (active && payload && payload.length) {
-    return (
-      <div className="custom-tooltip">
-        <div className="tooltip-label">{label}</div>
-        {payload.map((entry, index) => (
-          <div key={index} className="tooltip-value">
-            {entry.name}: {formatDuration(entry.value)}
-          </div>
-        ))}
-      </div>
-    );
-  }
-  return null;
-}
+  const loadYears = useCallback((signal: AbortSignal) => api.years(signal), []);
+  const years = useData('years', loadYears);
+  const year = calendarYear ?? (dash ? Number(dash.end.slice(0, 4)) : null);
+  const loadYear = useCallback((signal: AbortSignal) => api.year(year!, signal), [year]);
+  const yearDays = useData(year !== null ? `year:${year}` : null, loadYear);
 
-interface PieLegendProps {
-  data: Array<{ name: string; total_seconds: number; percent: number }>;
-}
-
-function PieLegend({ data }: PieLegendProps) {
-  return (
-    <div className="pie-legend">
-      {data.slice(0, 8).map((item, index) => (
-        <div key={item.name} className="pie-legend-item">
-          <div className="pie-legend-left">
-            <div className="pie-legend-color" style={{ backgroundColor: getColor(index) }} />
-            <span className="pie-legend-name" title={item.name}>{item.name}</span>
-          </div>
-          <div className="pie-legend-right">
-            <span className="pie-legend-time">{formatDuration(item.total_seconds)}</span>
-            <span className="pie-legend-percent">{item.percent.toFixed(1)}%</span>
-          </div>
-        </div>
-      ))}
-    </div>
+  const navigate = useCallback(
+    (next: Range) => {
+      setCalendarYear(null);
+      setRange(next);
+    },
+    [setRange],
   );
-}
+  const selectDays = useCallback((start: string, end: string) => navigate({ start, end }), [navigate]);
 
-// Shared tooltip styles for all charts
-const tooltipStyle = {
-  contentStyle: {
-    backgroundColor: '#161b22',
-    border: '1px solid #30363d',
-    borderRadius: '8px',
-    color: '#e6edf3',
-  },
-  labelStyle: {
-    color: '#e6edf3',
-  },
-  itemStyle: {
-    color: '#e6edf3',
-  },
-};
+  const loading = dashboard.loading || activity.loading;
+  const error = dashboard.error ?? activity.error;
+  const retry = () => {
+    dashboard.retry();
+    activity.retry();
+  };
 
-function App() {
-  const [dateRange, setDateRange] = useState<DateRange>('last7days');
-  // Input values (what user sees/types)
-  const [customStartInput, setCustomStartInput] = useState<Date>(subDays(new Date(), 7));
-  const [customEndInput, setCustomEndInput] = useState<Date>(subDays(new Date(), 1));
-  // Debounced values (what triggers API calls)
-  const customStart = useDebouncedValue(customStartInput, 500);
-  const customEnd = useDebouncedValue(customEndInput, 500);
-  
-  const [summaries, setSummaries] = useState<SummariesResponse | null>(null);
-  const [rangeStats, setRangeStats] = useState<RangeStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [lastSynced, setLastSynced] = useState<string>('');
-
-  // Duration view state
-  // Input value (what user sees/types)
-  const [durationDateInput, setDurationDateInput] = useState<Date>(subDays(new Date(), 1));
-  // Debounced value (what triggers API calls)
-  const durationDate = useDebouncedValue(durationDateInput, 500);
-  const [durations, setDurations] = useState<DurationResponse | null>(null);
-  const [durationLoading, setDurationLoading] = useState(false);
-
-  // Ref for scrolling to timeline
-  const timelineRef = useRef<HTMLDivElement>(null);
-
-  // Memoize date range to prevent infinite re-renders
-  const { start, end } = useMemo(
-    () => getDateRange(dateRange, customStart, customEnd),
-    [dateRange, customStart.getTime(), customEnd.getTime()]
-  );
-
-  // Use string representations for stable dependencies
-  const startStr = formatDate(start);
-  const endStr = formatDate(end);
-  const durationDateStr = formatDate(durationDate);
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [summariesData, rangeData, syncStatus] = await Promise.all([
-        api.getSummaries(startStr, endStr),
-        api.getRangeStats(startStr, endStr),
-        api.getSyncStatus(),
-      ]);
-      setSummaries(summariesData);
-      setRangeStats(rangeData);
-      setLastSynced(syncStatus.last_synced_day);
-    } catch (error) {
-      console.error('Failed to fetch data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [startStr, endStr]);
-
-  const fetchDurations = useCallback(async () => {
-    setDurationLoading(true);
-    try {
-      const data = await api.getDurations(durationDateStr);
-      setDurations(data);
-    } catch (error) {
-      console.error('Failed to fetch durations:', error);
-    } finally {
-      setDurationLoading(false);
-    }
-  }, [durationDateStr]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  useEffect(() => {
-    fetchDurations();
-  }, [fetchDurations]);
-
-  // Prepare chart data
-  const dailyChartData = summaries?.data.map((day) => ({
-    date: day.range.date,
-    displayDate: formatDisplayDate(day.range.date).split(',')[0],
-    hours: day.grand_total.total_seconds / 3600,
-    seconds: day.grand_total.total_seconds,
-  })) || [];
-
-  const canGoNext = addDays(durationDateInput, 1) < new Date();
-  const canGoPrev = true;
-
-  // Handle day click from activity graph
-  const handleDayClick = useCallback((date: Date) => {
-    setDurationDateInput(date);
-    // Scroll to timeline after a short delay to ensure state update
-    setTimeout(() => {
-      timelineRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-  }, []);
+  const today = dash?.today ?? status.data?.today ?? null;
+  const knownYears = years.data ?? [];
+  const previousYear = year ? knownYears.filter((y) => y < year).sort((a, b) => b - a)[0] : undefined;
+  const nextYear = year ? knownYears.filter((y) => y > year).sort((a, b) => a - b)[0] : undefined;
 
   return (
-    <div className="app">
-      <header className="header">
-        <div className="header-left">
-          <div className="logo">
-            <Clock size={24} />
-            WakaTime Stats
-          </div>
-        </div>
-        <div className="header-right">
-          <div className="sync-status">
-            <div className="sync-status-dot" />
-            Last synced: {lastSynced}
-          </div>
-        </div>
-      </header>
+    <>
+      <TopBar
+        range={range}
+        resolved={dash && !dashboard.loading ? { start: dash.start, end: dash.end } : null}
+        today={today}
+        status={status.data}
+        onChange={navigate}
+      />
 
-      <main className="main-content">
-        {/* Date Range Selector */}
-        <div className="date-range-selector">
-          <div className="range-buttons">
-            {(['last7days', 'last14days', 'last30days', 'last3months', 'last6months', 'lastYear'] as DateRange[]).map((range) => (
-              <button
-                key={range}
-                className={`range-button ${dateRange === range ? 'active' : ''}`}
-                onClick={() => setDateRange(range)}
-              >
-                {range === 'last7days' ? '7 Days' :
-                  range === 'last14days' ? '14 Days' :
-                    range === 'last30days' ? '30 Days' :
-                      range === 'last3months' ? '3 Months' :
-                        range === 'last6months' ? '6 Months' : '1 Year'}
-              </button>
-            ))}
+      <main className="page" aria-busy={loading}>
+        {error && (
+          <div className="error-note" role="alert">
+            <p>Couldn't load the dashboard. {error.message}</p>
+            <button className="text-button" onClick={retry}>
+              Try again
+            </button>
           </div>
-          <div className="date-inputs">
-            <input
-              type="date"
-              className="date-input"
-              value={formatDate(customStartInput)}
-              onChange={(e) => {
-                setCustomStartInput(parseISO(e.target.value));
-                setDateRange('custom');
-              }}
-            />
-            <span style={{ color: 'var(--text-muted)' }}>to</span>
-            <input
-              type="date"
-              className="date-input"
-              value={formatDate(customEndInput)}
-              onChange={(e) => {
-                setCustomEndInput(parseISO(e.target.value));
-                setDateRange('custom');
-              }}
-            />
-          </div>
-        </div>
+        )}
 
-        {loading ? (
-          <div className="loading">
-            <div className="spinner" />
-            Loading...
-          </div>
+        {!dash ? (
+          !error && <p className="page-loading">Loading…</p>
         ) : (
-          <>
-            {/* Summary Cards */}
-            <div className="summary-cards">
-              <div className="summary-card">
-                <div className="summary-card-label">
-                  <Clock size={16} />
-                  Total Time
-                </div>
-                <div className="summary-card-value">
-                  {summaries?.cumulative_total.text || '0 hrs'}
-                </div>
-                <div className="summary-card-secondary">
-                  {formatHours(summaries?.cumulative_total.seconds || 0)} hours
-                </div>
-              </div>
-              <div className="summary-card">
-                <div className="summary-card-label">
-                  <Calendar size={16} />
-                  Daily Average
-                </div>
-                <div className="summary-card-value">
-                  {summaries?.daily_average.text || '0 hrs'}
-                </div>
-                <div className="summary-card-secondary">
-                  {summaries?.daily_average.days_including_holidays || 0} days in range
-                </div>
-              </div>
-              <div className="summary-card">
-                <div className="summary-card-label">
-                  <Layers size={16} />
-                  Top Project
-                </div>
-                <div className="summary-card-value">
-                  {rangeStats?.projects[0]?.name || 'N/A'}
-                </div>
-                <div className="summary-card-secondary">
-                  {rangeStats?.projects[0] ? formatDuration(rangeStats.projects[0].total_seconds) : ''}
-                </div>
-              </div>
-              <div className="summary-card">
-                <div className="summary-card-label">
-                  <Code size={16} />
-                  Top Language
-                </div>
-                <div className="summary-card-value">
-                  {rangeStats?.languages[0]?.name || 'N/A'}
-                </div>
-                <div className="summary-card-secondary">
-                  {rangeStats?.languages[0] ? formatDuration(rangeStats.languages[0].total_seconds) : ''}
-                </div>
-              </div>
-            </div>
+          <div className={`page-content${loading ? ' is-loading' : ''}`}>
+            <header className="period">
+              <h1 className="period-title">{formatRange(dash.start, dash.end)}</h1>
+              <p className="period-note">{describePeriod(dash)}</p>
+            </header>
+            <Figures items={periodFigures(dash)} />
 
-            {/* Daily Activity Chart */}
-            <div className="chart-card chart-card-full" style={{ marginBottom: 24 }}>
-              <div className="chart-header">
-                <div className="chart-title">
-                  <Activity size={18} />
-                  Daily Activity
-                </div>
-              </div>
-              <div className="chart-container">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={dailyChartData}>
-                    <defs>
-                      <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#58a6ff" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#58a6ff" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
-                    <XAxis
-                      dataKey="displayDate"
-                      stroke="#8b949e"
-                      fontSize={12}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      stroke="#8b949e"
-                      fontSize={12}
-                      tickLine={false}
-                      tickFormatter={(value) => `${(value / 3600).toFixed(1)}h`}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Area
-                      type="monotone"
-                      dataKey="seconds"
-                      stroke="#58a6ff"
-                      strokeWidth={2}
-                      fillOpacity={1}
-                      fill="url(#colorHours)"
-                      name="Time"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Charts Grid */}
-            <div className="charts-grid">
-              {/* Languages Pie Chart */}
-              <div className="chart-card">
-                <div className="chart-header">
-                  <div className="chart-title">
-                    <Code size={18} />
-                    Languages
-                  </div>
-                </div>
-                <div className="chart-container-sm">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={(rangeStats?.languages.slice(0, 8) || []) as unknown as Array<Record<string, unknown>>}
-                        dataKey="total_seconds"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        paddingAngle={2}
-                      >
-                        {rangeStats?.languages.slice(0, 8).map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={getColor(index)} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value) => formatDuration(Number(value) || 0)}
-                        contentStyle={tooltipStyle.contentStyle}
-                        labelStyle={tooltipStyle.labelStyle}
-                        itemStyle={tooltipStyle.itemStyle}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <PieLegend data={rangeStats?.languages || []} />
-              </div>
-
-              {/* Editors Pie Chart */}
-              <div className="chart-card">
-                <div className="chart-header">
-                  <div className="chart-title">
-                    <Monitor size={18} />
-                    Editors
-                  </div>
-                </div>
-                <div className="chart-container-sm">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={(rangeStats?.editors.slice(0, 8) || []) as unknown as Array<Record<string, unknown>>}
-                        dataKey="total_seconds"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        paddingAngle={2}
-                      >
-                        {rangeStats?.editors.slice(0, 8).map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={getColor(index)} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value) => formatDuration(Number(value) || 0)}
-                        contentStyle={tooltipStyle.contentStyle}
-                        labelStyle={tooltipStyle.labelStyle}
-                        itemStyle={tooltipStyle.itemStyle}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <PieLegend data={rangeStats?.editors || []} />
-              </div>
-
-              {/* Projects Bar Chart */}
-              <div className="chart-card">
-                <div className="chart-header">
-                  <div className="chart-title">
-                    <Layers size={18} />
-                    Projects
-                  </div>
-                </div>
-                <div className="chart-container">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={rangeStats?.projects.slice(0, 10).map((p, i) => ({
-                        ...p,
-                        fill: getColor(i),
-                      })) || []}
-                      layout="vertical"
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#30363d" horizontal={false} />
-                      <XAxis
-                        type="number"
-                        stroke="#8b949e"
-                        fontSize={12}
-                        tickFormatter={(value) => `${(value / 3600).toFixed(0)}h`}
-                      />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        stroke="#8b949e"
-                        fontSize={12}
-                        width={120}
-                        tickLine={false}
-                      />
-                      <Tooltip
-                        formatter={(value) => formatDuration(Number(value) || 0)}
-                        contentStyle={tooltipStyle.contentStyle}
-                        labelStyle={tooltipStyle.labelStyle}
-                        itemStyle={tooltipStyle.itemStyle}
-                      />
-                      <Bar dataKey="total_seconds" name="Time" radius={[0, 4, 4, 0]}>
-                        {rangeStats?.projects.slice(0, 10).map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={getColor(index)} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Operating Systems Pie Chart */}
-              <div className="chart-card">
-                <div className="chart-header">
-                  <div className="chart-title">
-                    <Monitor size={18} />
-                    Operating Systems
-                  </div>
-                </div>
-                <div className="chart-container-sm">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={(rangeStats?.operating_systems.slice(0, 8) || []) as unknown as Array<Record<string, unknown>>}
-                        dataKey="total_seconds"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        paddingAngle={2}
-                      >
-                        {rangeStats?.operating_systems.slice(0, 8).map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={getColor(index)} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value) => formatDuration(Number(value) || 0)}
-                        contentStyle={tooltipStyle.contentStyle}
-                        labelStyle={tooltipStyle.labelStyle}
-                        itemStyle={tooltipStyle.itemStyle}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <PieLegend data={rangeStats?.operating_systems || []} />
-              </div>
-            </div>
-
-            {/* Activity Graph (GitHub-style heatmap) */}
-            <ActivityGraph onDayClick={handleDayClick} />
-
-            {/* Duration Timeline */}
-            <div className="chart-card duration-timeline" ref={timelineRef}>
-              <div className="timeline-header">
-                <div className="chart-title">
-                  <Clock size={18} />
-                  Daily Activity Timeline
-                </div>
-                <div className="timeline-nav">
-                  <button
-                    className="nav-button"
-                    onClick={() => setDurationDateInput(subDays(durationDateInput, 1))}
-                    disabled={!canGoPrev}
-                  >
-                    <ChevronLeft size={16} />
-                    Prev
-                  </button>
-                  <input
-                    type="date"
-                    className="date-input timeline-date-input daily-duration-date-input"
-                    value={formatDate(durationDateInput)}
-                    max={formatDate(subDays(new Date(), 1))}
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        setDurationDateInput(parseISO(e.target.value));
-                      }
-                    }}
-                  />
-                  <button
-                    className="nav-button"
-                    onClick={() => setDurationDateInput(addDays(durationDateInput, 1))}
-                    disabled={!canGoNext}
-                  >
-                    Next
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
-
-              <TimelineSpectrum
-                data={durations?.data || []}
-                date={durationDateStr}
-                loading={durationLoading}
+            {activity.data && (
+              <Rhythm
+                activity={activity.data}
+                days={dash.days}
+                durations={day && day === activity.data.days[0]?.date && !durations.loading ? durations.data : undefined}
+                onSelect={selectDays}
               />
-            </div>
-          </>
+            )}
+
+            <Breakdowns dash={dash} />
+
+            {hasAIActivity(dash) && <AISection dashboard={dash} />}
+
+            {year && (
+              <Section
+                title={year}
+                note="Select a day, or drag across days, to show them above."
+                aside={
+                  <div className="year-nav">
+                    <button className="year-button" disabled={previousYear === undefined} onClick={() => setCalendarYear(previousYear!)}>
+                      Previous year
+                    </button>
+                    <button className="year-button" disabled={nextYear === undefined} onClick={() => setCalendarYear(nextYear!)}>
+                      Next year
+                    </button>
+                  </div>
+                }
+              >
+                <Calendar
+                  year={year}
+                  days={yearDays.data ?? []}
+                  today={today ?? dash.end}
+                  selection={{ start: dash.start, end: dash.end }}
+                  onSelect={selectDays}
+                />
+              </Section>
+            )}
+          </div>
         )}
       </main>
-    </div>
+    </>
   );
 }
 
-export default App;
+// describePeriod says what the changes in the figures compare with.
+function describePeriod(dash: Dashboard): string {
+  const days = countDays(dash.start, dash.end);
+  const { start, end } = dash.previous;
+  if (days === 1) {
+    return `Compared with the day before, ${formatShortDate(start)}.`;
+  }
+  return `${days} days, compared with the ${days} days before: ${formatRange(start, end)}.`;
+}
+
+function periodFigures(dash: Dashboard): Figure[] {
+  const days = countDays(dash.start, dash.end);
+  const figures: Figure[] = [
+    { label: 'Coding time', value: formatDuration(dash.total_seconds), note: describeChange(dash.total_seconds, dash.previous.total_seconds) },
+    { label: 'Days coded', value: `${dash.active_days} of ${days}`, note: null },
+    {
+      label: 'Per day coded',
+      value: dash.active_days > 0 ? formatDuration(dash.total_seconds / dash.active_days) : '—',
+      note: null,
+    },
+  ];
+  if (dash.ai.coding_seconds > 0) {
+    figures.push({
+      label: 'AI coding',
+      value: formatShare(dash.ai.coding_seconds / Math.max(dash.total_seconds, 1)),
+      note: `${formatDuration(dash.ai.coding_seconds)} of the coding time`,
+    });
+  }
+  return figures;
+}
+
+function hasAIActivity(dash: Dashboard): boolean {
+  const { ai } = dash;
+  return ai.coding_seconds > 0 || ai.lines > 0 || ai.cost > 0 || ai.input_tokens + ai.cached_input_tokens + ai.output_tokens > 0;
+}
+
+function Breakdowns({ dash }: { dash: Dashboard }) {
+  const lists: Array<[string, Dashboard['projects'], boolean]> = [
+    ['Projects', dash.projects, true],
+    ['Languages', dash.languages, false],
+    ['Editors', dash.editors, false],
+    ['Categories', dash.categories, false],
+    ['Operating systems', dash.operating_systems, false],
+    ['Machines', dash.machines, false],
+  ];
+  return (
+    <Section title="Where the time went">
+      <div className="breakdowns">
+        {lists
+          // A single item, such as the only machine, says nothing about where the time went
+          .filter(([, items]) => items.length > 1)
+          .map(([title, items, code]) => (
+            <BarList
+              key={title}
+              title={title}
+              code={code}
+              total={dash.total_seconds}
+              items={items.map((item) => ({ name: item.name, value: item.total_seconds, label: formatDuration(item.total_seconds) }))}
+            />
+          ))}
+      </div>
+    </Section>
+  );
+}

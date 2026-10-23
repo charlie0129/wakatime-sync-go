@@ -1,233 +1,160 @@
-const API_BASE = import.meta.env.DEV ? 'http://localhost:3040' : window.location.origin;
+import { rangeQuery } from './dates';
+import type { Range } from './dates';
 
-export interface DurationData {
+// --- Dashboard ---
+
+export interface DayActivity {
+  date: string;
+  total_seconds: number;
+  ai_coding_seconds: number;
+  ai_lines: number;
+  human_lines: number;
+  ai_tokens: number;
+  ai_cost: number;
+  model_costs: Record<string, number>;
+}
+
+// Time spent in a project, editor, language, etc.; AI metrics are only set for projects and editors.
+export interface BreakdownItem {
+  name: string;
+  total_seconds: number;
+  ai_lines: number;
+  human_lines: number;
+  ai_tokens: number;
+  ai_cost: number;
+}
+
+export interface AISummary {
+  coding_seconds: number;
+  active_days: number;
+  lines: number;
+  human_lines: number;
+  input_tokens: number;
+  cached_input_tokens: number;
+  output_tokens: number;
+  cost: number;
+  sessions: number;
+  prompts: number;
+  prompt_length_avg: number;
+}
+
+export interface AIModelUsage {
+  name: string;
+  lines: number;
+  input_tokens: number;
+  cached_input_tokens: number;
+  output_tokens: number;
+  cost: number;
+}
+
+// Token usage of an AI model version, from the plugins that sent heartbeats.
+export interface AIModelVersionUsage {
+  model: string;
+  version: string;
+  complexity: string;
+  input_tokens: number;
+  cached_input_tokens: number;
+  output_tokens: number;
+  sessions: number;
+  heartbeats: number;
+}
+
+export interface Dashboard {
+  range: string;
+  start: string;
+  end: string;
+  today: string;
+  total_seconds: number;
+  active_days: number;
+  days: DayActivity[];
+  // The period of as many days before the range
+  previous: {
+    start: string;
+    end: string;
+    total_seconds: number;
+    active_days: number;
+    ai: AISummary;
+  };
+  categories: BreakdownItem[];
+  languages: BreakdownItem[];
+  editors: BreakdownItem[];
+  operating_systems: BreakdownItem[];
+  projects: BreakdownItem[];
+  machines: BreakdownItem[];
+  ai: AISummary;
+  ai_models: AIModelUsage[];
+  ai_model_versions: AIModelVersionUsage[];
+}
+
+// When coding happened on each day: spans of [start, end, ai] seconds since midnight, where ai is 1
+// when AI coding tools were used during the span.
+export interface Activity {
+  start: string;
+  end: string;
+  timezone: string;
+  days: Array<{ date: string; spans: Array<[number, number, number]> }>;
+}
+
+// --- Day details ---
+
+export interface Duration {
   project: string;
   time: number;
   duration: number;
-  entity?: string;
-  language?: string;
-  branch?: string;
-  type?: string;
+  ai_additions: number;
+  ai_deletions: number;
+  human_additions: number;
+  human_deletions: number;
+  ai_input_tokens: number;
+  ai_cached_input_tokens: number;
+  ai_output_tokens: number;
+  ai_model_total_cost: number;
+  ai_model_breakdown: Array<{ name: string; lines: number; cost: number }>;
 }
 
-export interface DurationResponse {
-  data: DurationData[];
-  start: string;
-  end: string;
-  timezone: string;
-}
+// --- Calendar ---
 
-export interface HeartbeatData {
-  entity: string;
-  type: string;
-  category: string;
-  time: number;
-  project: string;
-  branch: string;
-  language: string;
-  is_write: boolean;
-  machine_name_id: string;
-  lines: number;
-  lineno: number;
-  cursorpos: number;
-}
-
-export interface HeartbeatResponse {
-  data: HeartbeatData[];
-  start: string;
-  end: string;
-  timezone: string;
-}
-
-export interface SummaryItem {
-  name: string;
-  total_seconds: number;
-  percent: number;
-  digital: string;
-  hours: number;
-  minutes: number;
-  seconds?: number;
-  text: string;
-}
-
-export interface GrandTotal {
-  total_seconds: number;
-  digital: string;
-  hours: number;
-  minutes: number;
-  text: string;
-}
-
-export interface SummaryRange {
-  date: string;
-  start: string;
-  end: string;
-  text: string;
-  timezone: string;
-}
-
-export interface DaySummary {
-  grand_total: GrandTotal;
-  categories: SummaryItem[];
-  languages: SummaryItem[];
-  editors: SummaryItem[];
-  operating_systems: SummaryItem[];
-  projects: SummaryItem[];
-  dependencies: SummaryItem[];
-  machines: SummaryItem[];
-  range: SummaryRange;
-}
-
-export interface CumulativeTotal {
-  seconds: number;
-  text: string;
-  digital: string;
-}
-
-export interface DailyAverage {
-  seconds: number;
-  text: string;
-  days_including_holidays: number;
-}
-
-export interface SummariesResponse {
-  data: DaySummary[];
-  cumulative_total: CumulativeTotal;
-  daily_average: DailyAverage;
-  start: string;
-  end: string;
-}
-
-export interface ProjectData {
-  id: string;
-  name: string;
-  repository: string;
-  badge: string;
-  color: string;
-  has_public_url: boolean;
-  last_heartbeat_at: string;
-  first_heartbeat_at: string;
-  created_at: string;
-}
-
-export interface ProjectsResponse {
-  data: ProjectData[];
-}
-
-export interface DailyStat {
+export interface YearDay {
   date: string;
   total_seconds: number;
-  text: string;
+  projects?: Array<{ name: string; total_seconds: number }>;
 }
 
-export interface DailyStatsResponse {
-  data: DailyStat[];
-}
+// --- Sync ---
 
-export interface RangeStats {
-  total_seconds: number;
-  text: string;
-  categories: SummaryItem[];
-  languages: SummaryItem[];
-  editors: SummaryItem[];
-  operating_systems: SummaryItem[];
-  projects: SummaryItem[];
-  projects_daily: Array<{
-    day: string;
-    name: string;
-    total_seconds: number;
-  }>;
-  start: string;
-  end: string;
+export interface SyncRun {
+  started_at: string;
+  finished_at?: string;
+  days: number;
+  done: number;
+  failed: number;
 }
 
 export interface SyncStatus {
   last_synced_day: string;
+  failed_days: string[];
+  running: boolean;
+  run: SyncRun | null;
+  today: string;
+  timezone: string;
 }
 
-export interface AvailableYearsResponse {
-  years: number[];
+async function get<T>(path: string, signal: AbortSignal): Promise<T> {
+  const response = await fetch(`/api/v1/${path}`, { signal });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.error ?? `The server responded with ${response.status}.`);
+  }
+  return response.json();
 }
 
-export interface ProjectBreakdown {
-  name: string;
-  total_seconds: number;
-}
-
-export interface YearlyActivityDay {
-  date: string;
-  total_seconds: number;
-  projects: ProjectBreakdown[];
-}
-
-export interface YearlyActivityResponse {
-  year: number;
-  data: YearlyActivityDay[];
-}
-
-class ApiClient {
-  private async fetch<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
-    const url = new URL(API_BASE + endpoint);
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value) url.searchParams.set(key, value);
-      });
-    }
-
-    const response = await fetch(url.toString());
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-    return response.json();
-  }
-
-  async getDurations(date: string, project?: string): Promise<DurationResponse> {
-    return this.fetch('/api/v1/users/current/durations', { date, project: project || '' });
-  }
-
-  async getHeartbeats(date: string): Promise<HeartbeatResponse> {
-    return this.fetch('/api/v1/users/current/heartbeats', { date });
-  }
-
-  async getSummaries(start: string, end: string): Promise<SummariesResponse> {
-    return this.fetch('/api/v1/users/current/summaries', { start, end });
-  }
-
-  async getProjects(query?: string): Promise<ProjectsResponse> {
-    return this.fetch('/api/v1/users/current/projects', { q: query || '' });
-  }
-
-  async getDailyStats(start: string, end: string): Promise<DailyStatsResponse> {
-    return this.fetch('/api/v1/stats/daily', { start, end });
-  }
-
-  async getRangeStats(start: string, end: string): Promise<RangeStats> {
-    return this.fetch('/api/v1/stats/range', { start, end });
-  }
-
-  async getSyncStatus(): Promise<SyncStatus> {
-    return this.fetch('/api/v1/sync/status');
-  }
-
-  async getAvailableYears(): Promise<AvailableYearsResponse> {
-    return this.fetch('/api/v1/stats/years');
-  }
-
-  async getYearlyActivity(year: number): Promise<YearlyActivityResponse> {
-    return this.fetch('/api/v1/stats/yearly', { year: year.toString() });
-  }
-
-  async triggerSync(days: number, apiKey: string): Promise<{ message: string }> {
-    const url = new URL(API_BASE + '/api/v1/sync');
-    url.searchParams.set('days', days.toString());
-    url.searchParams.set('api_key', apiKey);
-
-    const response = await fetch(url.toString(), { method: 'POST' });
-    if (!response.ok) {
-      throw new Error(`Sync failed: ${response.status}`);
-    }
-    return response.json();
-  }
-}
-
-export const api = new ApiClient();
+export const api = {
+  dashboard: (range: Range, signal: AbortSignal) => get<Dashboard>(`dashboard?${rangeQuery(range)}`, signal),
+  activity: (range: Range, signal: AbortSignal) => get<Activity>(`activity?${rangeQuery(range)}`, signal),
+  durations: (date: string, signal: AbortSignal) =>
+    get<{ data: Duration[] }>(`users/current/durations?date=${date}`, signal).then((r) => r.data),
+  years: (signal: AbortSignal) => get<{ years: number[] }>('stats/years', signal).then((r) => r.years ?? []),
+  year: (year: number, signal: AbortSignal) =>
+    get<{ data: YearDay[] | null }>(`stats/yearly?year=${year}`, signal).then((r) => r.data ?? []),
+  syncStatus: (signal: AbortSignal) => get<SyncStatus>('sync/status', signal),
+};

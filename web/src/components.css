@@ -1,0 +1,269 @@
+/* Sections */
+
+.section {
+  margin-top: 56px;
+}
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 24px;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: var(--text-md);
+  font-weight: 650;
+}
+
+.section-aside {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  font-size: var(--text-xs);
+  color: var(--ink-2);
+}
+
+.section-note {
+  margin: -8px 0 16px;
+  max-width: 72ch;
+  color: var(--ink-2);
+}
+
+.empty-note {
+  color: var(--ink-3);
+}
+
+/* Legend keys mirror the marks they stand for */
+
+.key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.key-swatch {
+  width: 12px;
+  height: 8px;
+  border-radius: 1px;
+}
+
+.tone-hand {
+  background: var(--hand);
+  fill: var(--hand);
+}
+
+.tone-ai {
+  background: var(--ai);
+  fill: var(--ai);
+}
+
+.tone-bar {
+  background: var(--bar);
+  fill: var(--bar);
+}
+
+/* Toggles and plain text buttons */
+
+.toggle {
+  display: inline-flex;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.toggle-option {
+  padding: 2px 10px;
+  font-size: var(--text-xs);
+  color: var(--ink-2);
+}
+
+.toggle-option + .toggle-option {
+  border-left: 1px solid var(--rule);
+}
+
+.toggle-option:hover {
+  color: var(--ink);
+}
+
+.toggle-option[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.text-button {
+  margin-top: 12px;
+  padding: 0;
+  font-size: var(--text-xs);
+  color: var(--hand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.text-button:hover {
+  color: var(--ink);
+}
+
+/* Tooltips */
+
+.tooltip {
+  position: absolute;
+  z-index: 10;
+  min-width: 140px;
+  max-width: 220px;
+  padding: 8px 10px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 10px));
+}
+
+.tooltip-title {
+  margin-bottom: 4px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.tooltip-rows {
+  display: grid;
+  gap: 2px;
+}
+
+.tooltip-row {
+  display: flex;
+  gap: 6px;
+}
+
+.tooltip-row dd {
+  font-weight: 650;
+}
+
+.tooltip-row dt {
+  color: var(--ink-2);
+}
+
+/* Headline figures */
+
+.figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 24px;
+}
+
+.figure-label {
+  color: var(--ink-2);
+}
+
+.figure-value {
+  margin-top: 2px;
+  font-size: var(--text-lg);
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.figure-note {
+  margin-top: 2px;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
+/* Bar lists */
+
+.bar-list-title {
+  margin-bottom: 12px;
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+
+.bar-list-items {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+}
+
+.bar-list-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  row-gap: 4px;
+}
+
+.bar-list-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar-list-value {
+  color: var(--ink-2);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.bar-list-share {
+  display: inline-block;
+  min-width: 3.5em;
+  color: var(--ink-3);
+}
+
+.bar-list-detail {
+  grid-column: 1 / -1;
+  margin-top: -2px;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
+.bar-list-track {
+  grid-column: 1 / -1;
+  height: 4px;
+  background: var(--track);
+}
+
+.bar-list-bar {
+  display: block;
+  height: 100%;
+  min-width: 1px;
+}
+
+/* Data tables: the table views of charts, and lists of numbers */
+
+.table-scroll {
+  max-height: 480px;
+  overflow: auto;
+}
+
+.data-table {
+  width: 100%;
+  font-size: var(--text-sm);
+}
+
+.data-table th,
+.data-table td {
+  padding: 6px 0 6px 16px;
+  border-bottom: 1px solid var(--rule);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.data-table th:first-child,
+.data-table td:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--paper);
+  color: var(--ink-2);
+  font-weight: 650;
+}
+
+.data-table tbody th {
+  font-weight: 400;
+}

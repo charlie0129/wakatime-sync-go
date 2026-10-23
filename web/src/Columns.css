@@ -1,0 +1,36 @@
+.columns {
+  position: relative;
+  min-height: 200px;
+}
+
+.columns svg {
+  display: block;
+  overflow: visible;
+}
+
+.columns-grid {
+  stroke: var(--rule);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.columns-baseline {
+  stroke: var(--ink-3);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.columns-tick,
+.columns-label {
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  fill: var(--ink-3);
+}
+
+.columns-hover {
+  fill: var(--hover);
+}
+
+.columns-hit {
+  fill: transparent;
+}

@@ -1,0 +1,72 @@
+.calendar {
+  position: relative;
+  user-select: none;
+}
+
+.calendar-scroll {
+  overflow-x: auto;
+}
+
+.calendar-grid {
+  display: block;
+  touch-action: none;
+}
+
+.calendar-month,
+.calendar-weekday {
+  font-size: var(--text-xs);
+  fill: var(--ink-3);
+}
+
+.calendar-day {
+  cursor: pointer;
+}
+
+.calendar-day.level-0 {
+  fill: var(--heat-0);
+}
+
+.calendar-day.level-1 {
+  fill: var(--heat-1);
+}
+
+.calendar-day.level-2 {
+  fill: var(--heat-2);
+}
+
+.calendar-day.level-3 {
+  fill: var(--heat-3);
+}
+
+.calendar-day.level-4 {
+  fill: var(--heat-4);
+}
+
+.calendar-day.level-5 {
+  fill: var(--heat-5);
+}
+
+/* Days outside the selected range, and days yet to come */
+.calendar-day.is-dimmed {
+  opacity: 0.45;
+}
+
+.calendar-day.is-future {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 12px;
+  font-size: var(--text-xs);
+  color: var(--ink-2);
+}
+
+.calendar-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

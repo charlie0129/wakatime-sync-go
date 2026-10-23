@@ -1,68 +1,144 @@
+/*
+ * Design tokens. Colors were checked with the data-viz palette validator against --paper in each
+ * mode: --hand and --ai are told apart with color vision deficiencies and have at least 3:1
+ * contrast, and text colors at least 4.5:1.
+ */
 :root {
-  --bg-primary: #0d1117;
-  --bg-secondary: #161b22;
-  --bg-tertiary: #21262d;
-  --border-color: #30363d;
-  --text-primary: #c9d1d9;
-  --text-secondary: #8b949e;
-  --text-muted: #6e7681;
-  --accent-blue: #58a6ff;
-  --accent-green: #3fb950;
-  --accent-purple: #a371f7;
-  --accent-orange: #f78166;
-  --accent-yellow: #d29922;
-  --accent-red: #f85149;
+  color-scheme: light;
+
+  --paper: #f3f5f4;
+  --surface: #ffffff;
+  --ink: #1f2a44;
+  --ink-2: #55606e;
+  --ink-3: #646e7b;
+  --rule: #d5dbd8;
+  --track: #e4e8e6;
+  --hover: rgba(31, 42, 68, 0.06);
+
+  /* Data: time by hand and with AI tools, neutral amounts, and failures */
+  --hand: #2f5a96;
+  --ai: #a8700a;
+  --bar: #5b6676;
+  --danger: #b3261e;
+
+  /* Calendar, from little to a lot of coding time */
+  --heat-0: #e4e8e6;
+  --heat-1: #d9e0e9;
+  --heat-2: #aebccf;
+  --heat-3: #7f93b0;
+  --heat-4: #526788;
+  --heat-5: #2b3b5c;
+
+  --font: 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+  --font-code: 'Atkinson Hyperlegible Mono Variable', ui-monospace, monospace;
+
+  /* Type scale */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-md: 16px;
+  --text-lg: 24px;
+
+  --radius: 4px;
+  --page-width: 1200px;
+  --gutter: 32px;
 }
 
-* {
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --paper: #12171f;
+    --surface: #1a212b;
+    --ink: #dde4ec;
+    --ink-2: #a6b0bc;
+    --ink-3: #8b96a4;
+    --rule: #283240;
+    --track: #1e2631;
+    --hover: rgba(221, 228, 236, 0.06);
+
+    --hand: #5b8ee0;
+    --ai: #b8862f;
+    --bar: #8b96a4;
+    --danger: #f2817a;
+
+    --heat-0: #1a212b;
+    --heat-1: #1f2a3a;
+    --heat-2: #2e4363;
+    --heat-3: #46628f;
+    --heat-4: #6a88ba;
+    --heat-5: #a0b9dd;
+  }
+}
+
+@media (max-width: 720px) {
+  :root {
+    --gutter: 16px;
+  }
+}
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body, #root {
-  height: 100%;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+html {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--text-sm);
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
 }
 
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
-}
-
-a {
-  color: var(--accent-blue);
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
 }
 
 button {
   cursor: pointer;
-  font-family: inherit;
+  background: none;
+  border: none;
 }
 
-input, select {
-  font-family: inherit;
+:focus-visible {
+  outline: 2px solid var(--hand);
+  outline-offset: 2px;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+  }
+}
+
+/* Names that are code, such as projects and branches */
+.code {
+  font-family: var(--font-code);
+}
+
+/* Numbers that line up in columns */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

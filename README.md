@@ -25,8 +25,9 @@ This project was developed with assistance from AI/LLMs, supervised and modified
 
 - 🔄 Automatic daily sync of WakaTime data
 - 📊 REST API compatible with WakaTime's API format
+- 🤖 AI coding stats: time, lines changed by AI and by hand, tokens, estimated cost, and sessions, per model, project and editor
 - 💾 SQLite storage (pure Go, no CGO required)
-- 📈 Modern React dashboard with charts
+- 📈 A dashboard of when you coded, where the time went, and how much of it was AI, for any date range, in light and dark
 - 🐳 Docker-ready (with optimized cross-compilation)
 
 ## Migration from Old Project
@@ -150,28 +151,43 @@ services:
 
 You can put whatever reverse proxy in front of it (Caddy, Nginx, Traefik, etc.) as needed. If you want to have basic auth, just put it in the reverse proxy middleware.
 
-It syncs yesterday's data on startup, then continues to sync daily at 1:00 AM (using the `sync_schedule` and `timezone` from config).
+It syncs on startup, then daily at 1:00 AM (using the `sync_schedule` and `timezone` from config). Each sync covers:
 
-If you want to trigger a manual sync of last N days, use the API:
+- on a fresh database, every day since `start_date`;
+- otherwise, every day since the last successful sync, plus the last `sync_lookback_days` days again (WakaTime keeps receiving data for past days, e.g. from plugins that were offline), plus every day whose last sync failed.
+
+A re-sync never replaces stored data with less data (less time or fewer heartbeats), so your archive is kept even if WakaTime stops serving old data. Such days are logged with a warning.
+
+If you want to trigger a manual sync of last N days, or of a date range, use the API:
 
 ```bash
 curl -X POST "http://localhost:3040/api/v1/sync?days=30&api_key=YOUR_API_KEY"
+curl -X POST "http://localhost:3040/api/v1/sync?start=2025-01-01&end=2025-12-31&api_key=YOUR_API_KEY"
+```
+
+Add `force=true` to overwrite stored data even when WakaTime returns less of it. Only one sync runs at a time; the API returns `409 Conflict` while another one is running.
+
+AI coding stats are synced since they were added to this project. To fill them in for days synced before, sync those days again, for example:
+
+```bash
+curl -X POST "http://localhost:3040/api/v1/sync?start=2025-06-01&api_key=YOUR_API_KEY"
 ```
 
 ## Configuration Options
 
 Configuration can be provided via YAML file or environment variables. Environment variables take precedence over config file values.
 
-| Option              | Environment Variable | Description                                       | Default                       |
-| ------------------- | -------------------- | ------------------------------------------------- | ----------------------------- |
-| `listen_addr`       | `LISTEN_ADDR`        | Server listen address                             | `:3040`                       |
-| `database_path`     | `DATABASE_PATH`      | SQLite database file path                         | `wakatime.db`                 |
-| `wakatime_api_key`  | `WAKATIME_API_KEY`   | Your WakaTime API key                             | required                      |
-| `wakatime_base_url` | `WAKATIME_BASE_URL`  | WakaTime API base URL (for self-hosted instances) | `https://wakatime.com/api/v1` |
-| `proxy_url`         | `PROXY_URL`          | HTTP/SOCKS5 proxy for WakaTime API                | empty                         |
-| `start_date`        | `START_DATE`         | Start date for historical sync                    | `2016-01-01`                  |
-| `sync_schedule`     | `SYNC_SCHEDULE`      | Cron schedule for auto sync                       | `0 1 * * *`                   |
-| `timezone`          | `TZ`                 | Timezone for date calculations and sync cron      | `Local`                       |
+| Option               | Environment Variable | Description                                       | Default                       |
+| -------------------- | -------------------- | ------------------------------------------------- | ----------------------------- |
+| `listen_addr`        | `LISTEN_ADDR`        | Server listen address                             | `:3040`                       |
+| `database_path`      | `DATABASE_PATH`      | SQLite database file path                         | `wakatime.db`                 |
+| `wakatime_api_key`   | `WAKATIME_API_KEY`   | Your WakaTime API key                             | required                      |
+| `wakatime_base_url`  | `WAKATIME_BASE_URL`  | WakaTime API base URL (for self-hosted instances) | `https://wakatime.com/api/v1` |
+| `proxy_url`          | `PROXY_URL`          | HTTP/SOCKS5 proxy for WakaTime API                | empty                         |
+| `start_date`         | `START_DATE`         | Start date for historical sync                    | `2016-01-01`                  |
+| `sync_schedule`      | `SYNC_SCHEDULE`      | Cron schedule for auto sync                       | `0 1 * * *`                   |
+| `sync_lookback_days` | `SYNC_LOOKBACK_DAYS` | Number of recent days every sync fetches again    | `3`                           |
+| `timezone`           | `TZ`                 | Timezone for date calculations and sync cron      | `Local`                       |
 
 If you want to skip the initial sync on startup, set `SKIP_INITIAL_SYNC=true` environment variable.
 
@@ -221,15 +237,16 @@ The built frontend will be served automatically by the Go server.
 
 ### 4. Sync Historical Data
 
-Trigger a manual sync for the last N days:
+On a fresh database, the first sync fetches every day since `start_date`. You can also trigger a manual sync for the last N days, or for a date range:
 
 ```bash
 curl -X POST "http://localhost:3040/api/v1/sync?days=30&api_key=YOUR_API_KEY"
+curl -X POST "http://localhost:3040/api/v1/sync?start=2025-01-01&end=2025-12-31&api_key=YOUR_API_KEY"
 ```
 
 ## API Endpoints
 
-The API is designed to be compatible with the official WakaTime API format.
+The API is designed to be compatible with the official WakaTime API format, including the AI coding fields of durations, heartbeats, and summaries (`ai_additions`, `human_additions`, `ai_input_tokens`, `ai_model_total_cost`, `ai_model_breakdown`, etc.).
 
 ### Durations
 ```
@@ -259,11 +276,25 @@ GET /api/v1/stats/daily?start=2024-01-01&end=2024-01-31
 GET /api/v1/stats/range?start=2024-01-01&end=2024-01-31
 ```
 
+`/stats/range` also returns AI coding totals (`ai`), the usage of each AI model (`ai_models`), the token usage of each AI model version (`ai_model_versions`), and every AI model ever used, most expensive first (`ai_model_names`).
+
+### Dashboard
+```
+GET /api/v1/dashboard?range=30d
+GET /api/v1/dashboard?start=2024-01-01&end=2024-01-31
+GET /api/v1/activity?range=30d
+```
+
+The web dashboard gets everything it shows for a date range from `/dashboard` in one response, including the previous period of the same length to compare with, and when coding happened on each day from `/activity`. `range` is one of `yesterday`, `7d`, `30d`, `90d`, `12m`, `this-week`, `last-week`, `this-month`, `last-month`, `this-year` and `last-year`, in the configured timezone. These responses follow the dashboard and may change with it.
+
 ### Sync
 ```
 POST /api/v1/sync?days=7&api_key=YOUR_API_KEY
+POST /api/v1/sync?start=2024-01-01&end=2024-01-31&force=true&api_key=YOUR_API_KEY
 GET /api/v1/sync/status
 ```
+
+The status has the last successfully synced day, the days whose last sync failed, and the current sync run, or else the last one.
 
 ## Project Structure
 

@@ -1,0 +1,91 @@
+.rhythm {
+  position: relative;
+  user-select: none;
+}
+
+/* Hours across the top; height and margin add up to the 26px the tooltip position allows for */
+.rhythm-axis {
+  position: relative;
+  height: 20px;
+  margin-bottom: 6px;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
+.rhythm-hour,
+.rhythm-clock {
+  position: absolute;
+  bottom: 0;
+  transform: translateX(-50%);
+}
+
+.rhythm-clock {
+  padding: 0 4px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.rhythm-rows {
+  position: relative;
+  display: grid;
+  gap: 2px;
+}
+
+.rhythm-row {
+  display: flex;
+  align-items: center;
+}
+
+.rhythm-row.is-selectable {
+  cursor: pointer;
+}
+
+.rhythm-label {
+  flex: none;
+  padding-right: 12px;
+  overflow: hidden;
+  font-size: var(--text-xs);
+  line-height: 1;
+  color: var(--ink-2);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rhythm-row.is-hovered .rhythm-label {
+  color: var(--ink);
+}
+
+button.rhythm-label:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* A track per row, with a line every three hours */
+.rhythm-track {
+  display: block;
+  flex: none;
+  background-color: var(--track);
+  background-image: linear-gradient(to right, var(--rule) 1px, transparent 1px);
+  background-size: 12.5% 100%;
+}
+
+.rhythm-value {
+  flex: none;
+  padding-left: 10px;
+  font-size: var(--text-xs);
+  line-height: 1;
+  color: var(--ink-2);
+  text-align: right;
+}
+
+.rhythm-crosshair {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--ink);
+  opacity: 0.6;
+  pointer-events: none;
+}

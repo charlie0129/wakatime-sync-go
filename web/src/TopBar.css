@@ -1,0 +1,181 @@
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+}
+
+.topbar-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 24px;
+  max-width: var(--page-width);
+  margin: 0 auto;
+  padding: 10px var(--gutter);
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.range-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.segmented-option {
+  padding: 4px 10px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.segmented-option + .segmented-option {
+  border-left: 1px solid var(--rule);
+}
+
+.segmented-option:hover {
+  color: var(--ink);
+}
+
+.segmented-option[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* The range button, and the panel it opens */
+
+.range-menu {
+  position: relative;
+}
+
+.range-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  white-space: nowrap;
+}
+
+.range-button:hover,
+.range-button[aria-expanded='true'] {
+  border-color: var(--ink-3);
+}
+
+.range-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  width: 272px;
+  padding: 6px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.range-presets {
+  list-style: none;
+}
+
+.range-preset {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 2px;
+  text-align: left;
+}
+
+.range-preset:hover {
+  background: var(--hover);
+}
+
+.range-preset[aria-pressed='true'] {
+  font-weight: 650;
+}
+
+.range-custom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 10px 10px 4px;
+  border-top: 1px solid var(--rule);
+}
+
+.range-field {
+  display: grid;
+  gap: 2px;
+  font-size: var(--text-xs);
+  color: var(--ink-2);
+}
+
+.range-field input {
+  width: 100%;
+  padding: 3px 6px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  font-size: var(--text-xs);
+}
+
+.range-error {
+  grid-column: 1 / -1;
+  font-size: var(--text-xs);
+  color: var(--danger);
+}
+
+.range-apply {
+  grid-column: 1 / -1;
+  justify-self: start;
+  padding: 5px 12px;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 650;
+}
+
+/* Sync state */
+
+.sync-state {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-left: auto;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
+.sync-failed {
+  color: var(--danger);
+}
+
+@media (max-width: 720px) {
+  .segmented {
+    display: none;
+  }
+
+  .sync-state {
+    margin-left: 0;
+  }
+}

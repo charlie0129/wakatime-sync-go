@@ -1,7 +1,9 @@
 package config
 
 import (
+	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -15,7 +17,10 @@ type Config struct {
 	ProxyURL        string `yaml:"proxy_url"`
 	StartDate       string `yaml:"start_date"`
 	SyncSchedule    string `yaml:"sync_schedule"` // cron expression for daily sync
-	Timezone        string `yaml:"timezone"`
+	// SyncLookbackDays is how many recent days every sync fetches again, since WakaTime keeps
+	// receiving heartbeats for past days (e.g. from plugins that were offline)
+	SyncLookbackDays int    `yaml:"sync_lookback_days"`
+	Timezone         string `yaml:"timezone"`
 }
 
 func Load(path string) (*Config, error) {
@@ -56,6 +61,13 @@ func Load(path string) (*Config, error) {
 	if envSyncSchedule := os.Getenv("SYNC_SCHEDULE"); envSyncSchedule != "" {
 		cfg.SyncSchedule = envSyncSchedule
 	}
+	if envSyncLookbackDays := os.Getenv("SYNC_LOOKBACK_DAYS"); envSyncLookbackDays != "" {
+		days, err := strconv.Atoi(envSyncLookbackDays)
+		if err != nil {
+			return nil, fmt.Errorf("invalid SYNC_LOOKBACK_DAYS: %w", err)
+		}
+		cfg.SyncLookbackDays = days
+	}
 	if envTimezone := os.Getenv("TZ"); envTimezone != "" {
 		cfg.Timezone = envTimezone
 	}
@@ -73,6 +85,9 @@ func Load(path string) (*Config, error) {
 	if cfg.SyncSchedule == "" {
 		cfg.SyncSchedule = "0 1 * * *" // 1 AM daily
 	}
+	if cfg.SyncLookbackDays <= 0 {
+		cfg.SyncLookbackDays = 3
+	}
 	if cfg.Timezone == "" {
 		cfg.Timezone = "Local"
 	}
@@ -85,12 +100,13 @@ func Load(path string) (*Config, error) {
 
 func defaultConfig() *Config {
 	return &Config{
-		ListenAddr:      ":3040",
-		DatabasePath:    "wakatime.db",
-		StartDate:       "2016-01-01",
-		SyncSchedule:    "0 1 * * *",
-		Timezone:        "Local",
-		WakaTimeBaseURL: "https://wakatime.com/api/v1",
+		ListenAddr:       ":3040",
+		DatabasePath:     "wakatime.db",
+		StartDate:        "2016-01-01",
+		SyncSchedule:     "0 1 * * *",
+		SyncLookbackDays: 3,
+		Timezone:         "Local",
+		WakaTimeBaseURL:  "https://wakatime.com/api/v1",
 	}
 }
 

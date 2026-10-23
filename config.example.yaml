@@ -24,12 +24,18 @@ wakatime_base_url: ""
 proxy_url: ""
 
 # Start date for historical data sync
+# On a fresh database, the first sync fetches every day since this date.
 # Can be overridden by the START_DATE environment variable.
 start_date: "2016-01-01"
 
 # Cron schedule for daily sync (default: 1 AM)
 # Can be overridden by the SYNC_SCHEDULE environment variable.
 sync_schedule: "0 1 * * *"
+
+# Number of recent days every sync fetches again (default: 3), since WakaTime
+# keeps receiving data for past days, e.g. from plugins that were offline.
+# Can be overridden by the SYNC_LOOKBACK_DAYS environment variable.
+sync_lookback_days: 3
 
 # Timezone for date calculations, e.g., "Asia/Shanghai", "America/New_York"
 # Prefer setting the TZ environment variable for consistency.
